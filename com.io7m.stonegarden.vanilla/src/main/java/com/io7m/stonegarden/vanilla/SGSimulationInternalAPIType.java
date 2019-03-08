@@ -17,12 +17,15 @@
 package com.io7m.stonegarden.vanilla;
 
 import com.io7m.stonegarden.api.SGEventType;
+import com.io7m.stonegarden.api.simulation.SGSimulationType;
 
 import java.util.UUID;
 
-interface SGSimulationInternalAPIType
+interface SGSimulationInternalAPIType extends SGSimulationType
 {
   void publishEvent(SGEventType event);
 
   UUID freshUUID();
+
+  SGDeviceGraph deviceGraph();
 }

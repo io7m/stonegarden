@@ -14,19 +14,35 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.io7m.stonegarden.api.kernels;
 
-import com.io7m.stonegarden.api.SGIdentifiableType;
+package com.io7m.stonegarden.api.simulation;
+
+import com.io7m.immutables.styles.ImmutablesStyleType;
+import com.io7m.stonegarden.api.devices.SGDeviceEventType;
+import org.immutables.value.Value;
+
+import java.math.BigInteger;
+import java.util.UUID;
 
 /**
- * A kernel instance.
+ * The simulation should step forward.
  */
 
-public interface SGKernelType extends SGIdentifiableType
+@ImmutablesStyleType
+@Value.Immutable
+public interface SGSimulationEventTickType extends SGSimulationEventType
 {
-  @Override
-  default String kind()
-  {
-    return "kernel";
-  }
+  /**
+   * @return The monotonically increasing simulation frame
+   */
+
+  @Value.Parameter
+  BigInteger frame();
+
+  /**
+   * @return The simulation tick duration in seconds
+   */
+
+  @Value.Parameter
+  double seconds();
 }

@@ -14,19 +14,9 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.io7m.stonegarden.api.kernels;
-
-import com.io7m.stonegarden.api.SGIdentifiableType;
-
 /**
- * A kernel instance.
+ * A Garden Of Stones (Filesystem API)
  */
 
-public interface SGKernelType extends SGIdentifiableType
-{
-  @Override
-  default String kind()
-  {
-    return "kernel";
-  }
-}
+@org.osgi.annotation.bundle.Export
+package com.io7m.stonegarden.api.filesystem;

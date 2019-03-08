@@ -33,6 +33,25 @@ abstract class SGIdentifiable implements SGIdentifiableType
   }
 
   @Override
+  public final boolean equals(final Object o)
+  {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || !Objects.equals(this.getClass(), o.getClass())) {
+      return false;
+    }
+    final var that = (SGIdentifiable) o;
+    return this.id.equals(that.id);
+  }
+
+  @Override
+  public final int hashCode()
+  {
+    return Objects.hash(this.id);
+  }
+
+  @Override
   public final UUID id()
   {
     return this.id;

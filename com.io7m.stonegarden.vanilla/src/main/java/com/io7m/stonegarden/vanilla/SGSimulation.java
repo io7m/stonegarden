@@ -24,10 +24,12 @@ import com.io7m.stonegarden.api.devices.SGDeviceEventCreated;
 import com.io7m.stonegarden.api.devices.SGDeviceType;
 import com.io7m.stonegarden.api.devices.SGStorageDeviceDescription;
 import com.io7m.stonegarden.api.devices.SGStorageDeviceType;
+import com.io7m.stonegarden.api.simulation.SGSimulationEventTick;
 import com.io7m.stonegarden.api.simulation.SGSimulationType;
 import io.reactivex.Observable;
 import io.reactivex.subjects.PublishSubject;
 
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Objects;
@@ -42,6 +44,8 @@ final class SGSimulation implements SGSimulationType, SGSimulationInternalAPITyp
   private final HashSet<UUID> uuids;
   private final AtomicBoolean closed;
   private final Observable<SGEventType> events_distinct;
+  private final SGDeviceGraph device_graph;
+  private BigInteger frame;
 
   SGSimulation(
     final PublishSubject<SGEventType> in_events)
@@ -52,6 +56,8 @@ final class SGSimulation implements SGSimulationType, SGSimulationInternalAPITyp
     this.objects = new HashMap<>(128);
     this.uuids = new HashSet<>(128);
     this.closed = new AtomicBoolean(false);
+    this.device_graph = new SGDeviceGraph(this.events::onNext, this.events_distinct, this.objects);
+    this.frame = BigInteger.ZERO;
   }
 
   @Override
@@ -60,6 +66,22 @@ final class SGSimulation implements SGSimulationType, SGSimulationInternalAPITyp
     if (this.closed.compareAndSet(false, true)) {
       this.events.onComplete();
     }
+  }
+
+  private void checkNotClosed()
+  {
+    if (this.closed.get()) {
+      throw new IllegalStateException("Simulation has been closed");
+    }
+  }
+
+  @Override
+  public void tick(final double seconds)
+  {
+    this.checkNotClosed();
+
+    this.events.onNext(SGSimulationEventTick.of(this.frame, seconds));
+    this.frame = this.frame.add(BigInteger.ONE);
   }
 
   @Override
@@ -73,6 +95,8 @@ final class SGSimulation implements SGSimulationType, SGSimulationInternalAPITyp
     final SGComputerDescription description)
   {
     Objects.requireNonNull(description, "description");
+
+    this.checkNotClosed();
     return this.createDevice(uuid -> new SGComputer(this, uuid, description));
   }
 
@@ -82,6 +106,7 @@ final class SGSimulation implements SGSimulationType, SGSimulationInternalAPITyp
     final var uuid = this.freshUUID();
     final var device = constructor.apply(uuid);
     this.objects.put(uuid, device);
+    this.device_graph.addDevice(device);
     this.events.onNext(SGDeviceEventCreated.of(uuid));
     return device;
   }
@@ -91,6 +116,8 @@ final class SGSimulation implements SGSimulationType, SGSimulationInternalAPITyp
     final SGStorageDeviceDescription description)
   {
     Objects.requireNonNull(description, "description");
+
+    this.checkNotClosed();
     return this.createDevice(uuid -> new SGStorageDevice(this, uuid, description));
   }
 
@@ -105,6 +132,12 @@ final class SGSimulation implements SGSimulationType, SGSimulationInternalAPITyp
       this.uuids.add(uuid);
       return uuid;
     }
+  }
+
+  @Override
+  public SGDeviceGraph deviceGraph()
+  {
+    return this.device_graph;
   }
 
   @Override

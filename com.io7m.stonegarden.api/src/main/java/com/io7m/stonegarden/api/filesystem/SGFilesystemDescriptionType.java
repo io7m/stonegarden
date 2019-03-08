@@ -14,19 +14,33 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.io7m.stonegarden.api.kernels;
+package com.io7m.stonegarden.api.filesystem;
 
-import com.io7m.stonegarden.api.SGIdentifiableType;
+import com.io7m.immutables.styles.ImmutablesStyleType;
+import org.immutables.value.Value;
+
+import java.nio.file.FileSystem;
+import java.util.function.Supplier;
 
 /**
- * A kernel instance.
+ * A description of a filesystem.
  */
 
-public interface SGKernelType extends SGIdentifiableType
+@ImmutablesStyleType
+@Value.Immutable
+public interface SGFilesystemDescriptionType
 {
-  @Override
-  default String kind()
-  {
-    return "kernel";
-  }
+  /**
+   * @return The filesystem format
+   */
+
+  @Value.Parameter
+  SGFilesystemFormat format();
+
+  /**
+   * @return A function that instantiates a filesystem
+   */
+
+  @Value.Parameter
+  Supplier<FileSystem> filesystem();
 }

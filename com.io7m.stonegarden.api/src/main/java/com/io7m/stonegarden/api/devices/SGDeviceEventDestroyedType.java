@@ -29,7 +29,7 @@ import java.util.UUID;
 
 @ImmutablesStyleType
 @Value.Immutable
-public interface SGDeviceEventDestroyedType extends SGComputerEventType
+public interface SGDeviceEventDestroyedType extends SGDeviceEventType
 {
   @Override
   @Value.Parameter

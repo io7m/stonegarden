@@ -17,7 +17,6 @@
 package com.io7m.stonegarden.api.connectors;
 
 import com.io7m.stonegarden.api.SGException;
-import com.io7m.stonegarden.api.SGIdentifiableType;
 import com.io7m.stonegarden.api.devices.SGDeviceType;
 
 import java.util.Optional;
@@ -26,7 +25,7 @@ import java.util.Optional;
  * A hardware connector on a device.
  */
 
-public interface SGConnectorType extends SGIdentifiableType
+public interface SGConnectorType extends SGConnectableType
 {
   @Override
   default String kind()
@@ -58,8 +57,8 @@ public interface SGConnectorType extends SGIdentifiableType
     throws SGException;
 
   /**
-   * Disconnect this connector from any connected socket.
-   * Does nothing if the connector is not connected.
+   * Disconnect this connector from any connected socket. Does nothing if the connector is not
+   * connected.
    */
 
   void disconnect();

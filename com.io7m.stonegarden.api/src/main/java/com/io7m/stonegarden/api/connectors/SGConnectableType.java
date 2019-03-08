@@ -14,19 +14,16 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.io7m.stonegarden.api.kernels;
+
+package com.io7m.stonegarden.api.connectors;
 
 import com.io7m.stonegarden.api.SGIdentifiableType;
 
 /**
- * A kernel instance.
+ * The type of objects that can be connected.
  */
 
-public interface SGKernelType extends SGIdentifiableType
+public interface SGConnectableType extends SGIdentifiableType
 {
-  @Override
-  default String kind()
-  {
-    return "kernel";
-  }
+
 }

@@ -14,19 +14,16 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.io7m.stonegarden.api.kernels;
 
-import com.io7m.stonegarden.api.SGIdentifiableType;
+package com.io7m.stonegarden.api;
 
 /**
- * A kernel instance.
+ * The type of objects that can be closed.
  */
 
-public interface SGKernelType extends SGIdentifiableType
+public interface SGCloseableType extends AutoCloseable
 {
   @Override
-  default String kind()
-  {
-    return "kernel";
-  }
+  void close()
+    throws SGException;
 }

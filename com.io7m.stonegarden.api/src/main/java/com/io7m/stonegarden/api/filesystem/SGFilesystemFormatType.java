@@ -14,19 +14,23 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.io7m.stonegarden.api.kernels;
+package com.io7m.stonegarden.api.filesystem;
 
-import com.io7m.stonegarden.api.SGIdentifiableType;
+import com.io7m.immutables.styles.ImmutablesStyleType;
+import org.immutables.value.Value;
 
 /**
- * A kernel instance.
+ * A description of a filesystem format.
  */
 
-public interface SGKernelType extends SGIdentifiableType
+@ImmutablesStyleType
+@Value.Immutable
+public interface SGFilesystemFormatType
 {
-  @Override
-  default String kind()
-  {
-    return "kernel";
-  }
+  /**
+   * @return The name of the format
+   */
+
+  @Value.Parameter
+  SGFilesystemFormatName name();
 }

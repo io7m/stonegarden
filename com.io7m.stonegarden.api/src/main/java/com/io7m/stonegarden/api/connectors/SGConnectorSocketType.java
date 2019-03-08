@@ -17,7 +17,6 @@
 package com.io7m.stonegarden.api.connectors;
 
 import com.io7m.stonegarden.api.SGException;
-import com.io7m.stonegarden.api.SGIdentifiableType;
 import com.io7m.stonegarden.api.devices.SGDeviceType;
 
 import java.util.Optional;
@@ -26,7 +25,7 @@ import java.util.Optional;
  * A hardware socket on a device.
  */
 
-public interface SGConnectorSocketType extends SGIdentifiableType
+public interface SGConnectorSocketType extends SGConnectableType
 {
   @Override
   default String kind()

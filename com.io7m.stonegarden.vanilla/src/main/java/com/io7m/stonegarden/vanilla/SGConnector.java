@@ -17,11 +17,7 @@
 package com.io7m.stonegarden.vanilla;
 
 import com.io7m.stonegarden.api.SGException;
-import com.io7m.stonegarden.api.connectors.SGConnectedAlreadyException;
 import com.io7m.stonegarden.api.connectors.SGConnectorDescription;
-import com.io7m.stonegarden.api.connectors.SGConnectorEventConnected;
-import com.io7m.stonegarden.api.connectors.SGConnectorEventDisconnected;
-import com.io7m.stonegarden.api.connectors.SGConnectorIncompatibleException;
 import com.io7m.stonegarden.api.connectors.SGConnectorSocketType;
 import com.io7m.stonegarden.api.connectors.SGConnectorType;
 import com.io7m.stonegarden.api.devices.SGDeviceType;
@@ -29,15 +25,12 @@ import com.io7m.stonegarden.api.devices.SGDeviceType;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 final class SGConnector extends SGIdentifiable implements SGConnectorType
 {
   private final SGConnectorDescription description;
-  private final AtomicBoolean connection_changing;
   private final SGDeviceType owner;
   private final SGSimulationInternalAPIType simulation;
-  private SGConnectorSocketType connected;
 
   SGConnector(
     final SGSimulationInternalAPIType in_simulation,
@@ -53,9 +46,6 @@ final class SGConnector extends SGIdentifiable implements SGConnectorType
       Objects.requireNonNull(in_device, "device");
     this.description =
       Objects.requireNonNull(in_description, "description");
-
-    this.connection_changing = new AtomicBoolean(false);
-    this.connected = null;
   }
 
   @Override
@@ -75,61 +65,18 @@ final class SGConnector extends SGIdentifiable implements SGConnectorType
     throws SGException
   {
     Objects.requireNonNull(socket, "socket");
-
-    if (this.connection_changing.compareAndSet(false, true)) {
-      try {
-        if (this.connected != null) {
-          if (!Objects.equals(this.connected, socket)) {
-            throw new SGConnectedAlreadyException(this, this.connected, socket);
-          }
-          return;
-        }
-
-        if (!Objects.equals(socket.description().protocol(), this.description.protocol())) {
-          throw new SGConnectorIncompatibleException(socket, this);
-        }
-
-        socket.acceptConnector(this);
-        this.connected = socket;
-
-        this.simulation.publishEvent(
-          SGConnectorEventConnected.builder()
-            .setConnector(this.id())
-            .setSocket(socket.id())
-            .build());
-
-      } finally {
-        this.connection_changing.set(false);
-      }
-    }
+    this.simulation.deviceGraph().connect(this, socket);
   }
 
   @Override
   public void disconnect()
   {
-    if (this.connection_changing.compareAndSet(false, true)) {
-      try {
-        final var peer = this.connected;
-        if (peer != null) {
-          peer.disconnect();
-
-          this.connected = null;
-
-          this.simulation.publishEvent(
-            SGConnectorEventDisconnected.builder()
-              .setConnector(this.id())
-              .setSocket(peer.id())
-              .build());
-        }
-      } finally {
-        this.connection_changing.set(false);
-      }
-    }
+    this.simulation.deviceGraph().disconnect(this);
   }
 
   @Override
   public Optional<SGConnectorSocketType> connectedTo()
   {
-    return Optional.ofNullable(this.connected);
+    return this.simulation.deviceGraph().connectedSocket(this);
   }
 }

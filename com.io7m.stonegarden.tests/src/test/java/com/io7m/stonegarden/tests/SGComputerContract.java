@@ -23,10 +23,14 @@ import com.io7m.stonegarden.api.computer.SGComputerEventBootFailed;
 import com.io7m.stonegarden.api.computer.SGComputerEventBooting;
 import com.io7m.stonegarden.api.connectors.SGConnectorDescription;
 import com.io7m.stonegarden.api.connectors.SGConnectorEventConnected;
+import com.io7m.stonegarden.api.connectors.SGConnectorEventDisconnected;
 import com.io7m.stonegarden.api.connectors.SGConnectorProtocol;
 import com.io7m.stonegarden.api.connectors.SGConnectorProtocolName;
 import com.io7m.stonegarden.api.connectors.SGConnectorSocketDescription;
 import com.io7m.stonegarden.api.devices.SGDeviceEventCreated;
+import com.io7m.stonegarden.api.devices.SGDeviceEventDestroyed;
+import com.io7m.stonegarden.api.devices.SGDeviceEventDestroying;
+import com.io7m.stonegarden.api.devices.SGDeviceNotConnectedException;
 import com.io7m.stonegarden.api.devices.SGStorageDeviceDescription;
 import com.io7m.stonegarden.api.simulation.SGSimulationType;
 import io.reactivex.disposables.Disposable;
@@ -37,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Optional;
 
 public abstract class SGComputerContract
 {
@@ -120,6 +125,7 @@ public abstract class SGComputerContract
 
     connector.connectTo(socket);
 
+    computer.setBootDevice(device);
     computer.boot();
     computer.shutdown();
 
@@ -152,6 +158,90 @@ public abstract class SGComputerContract
         Assertions.assertEquals(computer.id(), e.id());
         Assertions.assertEquals("No kernel installed", e.message());
       });
+  }
+
+  @Test
+  public final void testCreateComputerBootDeviceDeleted()
+    throws Exception
+  {
+    final var device =
+      this.simulation.createStorageDevice(
+        SGStorageDeviceDescription.builder()
+          .addConnectors(SGConnectorDescription.of(HARDWARE_PORT_PROTOCOL_0))
+          .build());
+
+    final var computer =
+      this.simulation.createComputer(
+        SGComputerDescription.builder()
+          .setArchitecture(ARCH_0)
+          .addSockets(SGConnectorSocketDescription.of(HARDWARE_PORT_PROTOCOL_0))
+          .build());
+
+    final var socket = computer.sockets().get(0);
+    final var connector = device.connectors().get(0);
+
+    connector.connectTo(socket);
+    Assertions.assertEquals(Optional.empty(), computer.bootDevice());
+    computer.setBootDevice(device);
+    Assertions.assertEquals(Optional.of(device), computer.bootDevice());
+    device.close();
+    Assertions.assertEquals(Optional.empty(), computer.bootDevice());
+
+    Assertions.assertEquals(6, this.events.size(), "Correct event count");
+    EventAssertions.isTypeAndMatches(
+      SGDeviceEventCreated.class,
+      this.events,
+      0,
+      e -> Assertions.assertEquals(device.id(), e.id()));
+    EventAssertions.isTypeAndMatches(
+      SGDeviceEventCreated.class,
+      this.events,
+      1,
+      e -> Assertions.assertEquals(computer.id(), e.id()));
+    EventAssertions.isTypeAndMatches(
+      SGConnectorEventConnected.class,
+      this.events,
+      2,
+      e -> Assertions.assertEquals(connector.id(), e.connector()));
+    EventAssertions.isTypeAndMatches(
+      SGConnectorEventDisconnected.class,
+      this.events,
+      3,
+      e -> Assertions.assertEquals(connector.id(), e.connector()));
+    EventAssertions.isTypeAndMatches(
+      SGDeviceEventDestroying.class,
+      this.events,
+      4,
+      e -> Assertions.assertEquals(device.id(), e.id()));
+    EventAssertions.isTypeAndMatches(
+      SGDeviceEventDestroyed.class,
+      this.events,
+      5,
+      e -> Assertions.assertEquals(device.id(), e.id()));
+  }
+
+  @Test
+  public final void testCreateComputerBootDeviceNotConnected()
+    throws Exception
+  {
+    final var device =
+      this.simulation.createStorageDevice(
+        SGStorageDeviceDescription.builder()
+          .addConnectors(SGConnectorDescription.of(HARDWARE_PORT_PROTOCOL_0))
+          .build());
+
+    final var computer =
+      this.simulation.createComputer(
+        SGComputerDescription.builder()
+          .setArchitecture(ARCH_0)
+          .addSockets(SGConnectorSocketDescription.of(HARDWARE_PORT_PROTOCOL_0))
+          .build());
+
+    final var ex =
+      Assertions.assertThrows(
+        SGDeviceNotConnectedException.class,
+        () -> computer.setBootDevice(device));
+    this.logger.debug("exception: ", ex);
   }
 
   @Test

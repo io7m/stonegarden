@@ -14,9 +14,24 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+
+package com.io7m.stonegarden.api.devices;
+
+import com.io7m.immutables.styles.ImmutablesStyleType;
+import com.io7m.stonegarden.api.computer.SGComputerEventType;
+import org.immutables.value.Value;
+
+import java.util.UUID;
+
 /**
- * A Garden Of Stones (Software packages API)
+ * A device is in the process of being destroyed.
  */
 
-@org.osgi.annotation.bundle.Export
-package com.io7m.stonegarden.api.softpack;
+@ImmutablesStyleType
+@Value.Immutable
+public interface SGDeviceEventDestroyingType extends SGDeviceEventType
+{
+  @Override
+  @Value.Parameter
+  UUID id();
+}

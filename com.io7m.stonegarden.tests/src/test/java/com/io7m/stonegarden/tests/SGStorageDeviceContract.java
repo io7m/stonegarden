@@ -112,27 +112,27 @@ public abstract class SGStorageDeviceContract
           .addConnectors(SGConnectorDescription.of(HARDWARE_PORT_PROTOCOL_0))
           .build());
 
-    final var connector0 = device.connectors().get(0);
-    Assertions.assertEquals(device, connector0.owner());
+    final var connector = device.connectors().get(0);
+    Assertions.assertEquals(device, connector.owner());
 
-    connector0.connectTo(socket);
-    Assertions.assertEquals(Optional.of(socket), connector0.connectedTo());
-    Assertions.assertEquals(Optional.of(connector0), socket.connectedTo());
+    connector.connectTo(socket);
+    Assertions.assertEquals(Optional.of(socket), connector.connectedTo());
+    Assertions.assertEquals(Optional.of(connector), socket.connectedTo());
 
-    connector0.disconnect();
-    Assertions.assertEquals(Optional.empty(), connector0.connectedTo());
+    connector.disconnect();
+    Assertions.assertEquals(Optional.empty(), connector.connectedTo());
     Assertions.assertEquals(Optional.empty(), socket.connectedTo());
 
-    socket.acceptConnector(connector0);
-    Assertions.assertEquals(Optional.of(socket), connector0.connectedTo());
-    Assertions.assertEquals(Optional.of(connector0), socket.connectedTo());
+    socket.acceptConnector(connector);
+    Assertions.assertEquals(Optional.of(socket), connector.connectedTo());
+    Assertions.assertEquals(Optional.of(connector), socket.connectedTo());
 
     socket.disconnect();
-    Assertions.assertEquals(Optional.empty(), connector0.connectedTo());
+    Assertions.assertEquals(Optional.empty(), connector.connectedTo());
     Assertions.assertEquals(Optional.empty(), socket.connectedTo());
 
     socket.disconnect();
-    connector0.disconnect();
+    connector.disconnect();
 
     Assertions.assertEquals(6, this.events.size());
 
@@ -151,7 +151,7 @@ public abstract class SGStorageDeviceContract
       this.events,
       2,
       event -> {
-        Assertions.assertEquals(connector0.id(), event.connector());
+        Assertions.assertEquals(connector.id(), event.connector());
         Assertions.assertEquals(socket.id(), event.socket());
       });
     EventAssertions.isTypeAndMatches(
@@ -159,7 +159,7 @@ public abstract class SGStorageDeviceContract
       this.events,
       3,
       event -> {
-        Assertions.assertEquals(connector0.id(), event.connector());
+        Assertions.assertEquals(connector.id(), event.connector());
         Assertions.assertEquals(socket.id(), event.socket());
       });
     EventAssertions.isTypeAndMatches(
@@ -167,7 +167,7 @@ public abstract class SGStorageDeviceContract
       this.events,
       4,
       event -> {
-        Assertions.assertEquals(connector0.id(), event.connector());
+        Assertions.assertEquals(connector.id(), event.connector());
         Assertions.assertEquals(socket.id(), event.socket());
       });
     EventAssertions.isTypeAndMatches(
@@ -175,7 +175,7 @@ public abstract class SGStorageDeviceContract
       this.events,
       5,
       event -> {
-        Assertions.assertEquals(connector0.id(), event.connector());
+        Assertions.assertEquals(connector.id(), event.connector());
         Assertions.assertEquals(socket.id(), event.socket());
       });
   }
@@ -344,18 +344,22 @@ public abstract class SGStorageDeviceContract
           .addSockets(SGConnectorSocketDescription.of(HARDWARE_PORT_PROTOCOL_0))
           .build());
 
-    final var socket0 = computer.sockets().get(0);
+    final var socket = computer.sockets().get(0);
 
     final var device =
       this.simulation.createStorageDevice(
         SGStorageDeviceDescription.builder()
           .addConnectors(SGConnectorDescription.of(HARDWARE_PORT_PROTOCOL_0))
-          .addConnectors(SGConnectorDescription.of(HARDWARE_PORT_PROTOCOL_0))
           .build());
 
-    final var connector0 = device.connectors().get(0);
-    connector0.connectTo(socket0);
-    connector0.connectTo(socket0);
+    final var connector = device.connectors().get(0);
+    connector.connectTo(socket);
+
+    final var ex =
+      Assertions.assertThrows(
+        SGConnectedAlreadyException.class,
+        () -> connector.connectTo(socket));
+    this.logger.debug("exception: ", ex);
   }
 
   @Test
@@ -369,7 +373,7 @@ public abstract class SGStorageDeviceContract
           .addSockets(SGConnectorSocketDescription.of(HARDWARE_PORT_PROTOCOL_0))
           .build());
 
-    final var socket0 = computer.sockets().get(0);
+    final var socket = computer.sockets().get(0);
 
     final var device =
       this.simulation.createStorageDevice(
@@ -377,9 +381,14 @@ public abstract class SGStorageDeviceContract
           .addConnectors(SGConnectorDescription.of(HARDWARE_PORT_PROTOCOL_0))
           .build());
 
-    final var connector0 = device.connectors().get(0);
-    socket0.acceptConnector(connector0);
-    socket0.acceptConnector(connector0);
+    final var connector = device.connectors().get(0);
+    socket.acceptConnector(connector);
+
+    final var ex =
+      Assertions.assertThrows(
+        SGConnectedAlreadyException.class,
+        () -> socket.acceptConnector(connector));
+    this.logger.debug("exception: ", ex);
   }
 
   private void eventPublished(

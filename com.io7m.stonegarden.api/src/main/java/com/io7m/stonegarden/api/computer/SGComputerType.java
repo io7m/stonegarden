@@ -16,7 +16,11 @@
 
 package com.io7m.stonegarden.api.computer;
 
+import com.io7m.stonegarden.api.devices.SGDeviceNotConnectedException;
 import com.io7m.stonegarden.api.devices.SGDeviceType;
+import com.io7m.stonegarden.api.devices.SGStorageDeviceType;
+
+import java.util.Optional;
 
 /**
  * A computer instance.
@@ -32,6 +36,23 @@ public interface SGComputerType extends SGDeviceType
   {
     return "computer";
   }
+
+  /**
+   * Set the boot device for the computer. Must be connected to the computer.
+   *
+   * @param device The device
+   *
+   * @throws SGDeviceNotConnectedException If the boot device is not connected to the computer
+   */
+
+  void setBootDevice(SGStorageDeviceType device)
+    throws SGDeviceNotConnectedException;
+
+  /**
+   * @return The computer's boot device, if one exists
+   */
+
+  Optional<SGStorageDeviceType> bootDevice();
 
   /**
    * Boot the computer. Does nothing if the computer is already running.

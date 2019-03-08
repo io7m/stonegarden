@@ -21,6 +21,8 @@ import com.io7m.stonegarden.api.SGVersion;
 import com.io7m.stonegarden.api.SGVersionRange;
 import com.io7m.stonegarden.api.connectors.SGConnectorProtocol;
 import com.io7m.stonegarden.api.connectors.SGConnectorProtocolName;
+import com.io7m.stonegarden.api.filesystem.SGFilesystemFormat;
+import com.io7m.stonegarden.api.filesystem.SGFilesystemFormatName;
 import com.io7m.stonegarden.api.programs.SGProgramCompatibility;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Assertions;
@@ -34,26 +36,31 @@ import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class SGBruteForceEqualityTest
 {
   private static final Class<?> CLASSES[] = {
-    com.io7m.stonegarden.api.computer.SGComputerEventBooting.class,
-    com.io7m.stonegarden.api.connectors.SGConnectorEventConnected.class,
-    com.io7m.stonegarden.api.computer.SGComputerEventShutDown.class,
-    com.io7m.stonegarden.api.computer.SGComputerEventBootFailed.class,
-    com.io7m.stonegarden.api.computer.SGComputerEventBooted.class,
     com.io7m.stonegarden.api.computer.SGComputerDescription.class,
-    com.io7m.stonegarden.api.connectors.SGConnectorEventDisconnected.class,
+    com.io7m.stonegarden.api.computer.SGComputerEventBooted.class,
+    com.io7m.stonegarden.api.computer.SGComputerEventBootFailed.class,
+    com.io7m.stonegarden.api.computer.SGComputerEventBooting.class,
+    com.io7m.stonegarden.api.computer.SGComputerEventShutDown.class,
     com.io7m.stonegarden.api.connectors.SGConnectorDescription.class,
-    com.io7m.stonegarden.api.connectors.SGConnectorProtocolName.class,
+    com.io7m.stonegarden.api.connectors.SGConnectorEventConnected.class,
+    com.io7m.stonegarden.api.connectors.SGConnectorEventDisconnected.class,
     com.io7m.stonegarden.api.connectors.SGConnectorProtocol.class,
+    com.io7m.stonegarden.api.connectors.SGConnectorProtocolName.class,
     com.io7m.stonegarden.api.connectors.SGConnectorSocketDescription.class,
     com.io7m.stonegarden.api.devices.SGDeviceEventCreated.class,
     com.io7m.stonegarden.api.devices.SGDeviceEventDestroyed.class,
+    com.io7m.stonegarden.api.devices.SGDeviceEventDestroying.class,
     com.io7m.stonegarden.api.devices.SGStorageDeviceDescription.class,
+    com.io7m.stonegarden.api.filesystem.SGFilesystemDescription.class,
+    com.io7m.stonegarden.api.filesystem.SGFilesystemFormat.class,
+    com.io7m.stonegarden.api.filesystem.SGFilesystemFormatName.class,
     com.io7m.stonegarden.api.kernels.SGKernelDescription.class,
     com.io7m.stonegarden.api.programs.SGProgramCompatibility.class,
     com.io7m.stonegarden.api.programs.SGProgramDescription.class,
@@ -153,11 +160,19 @@ public final class SGBruteForceEqualityTest
             .setName("PK3")
             .build());
       }
+      if (return_type.equals(SGFilesystemFormat.class)) {
+        return SGFilesystemFormat.builder()
+          .setName(SGFilesystemFormatName.of("BLOCKFS"))
+          .build();
+      }
       if (return_type.equals(SGConnectorProtocolName.class)) {
         return SGConnectorProtocolName.of("GPB-0");
       }
       if (return_type.equals(SGConnectorProtocol.class)) {
         return SGConnectorProtocol.of(SGConnectorProtocolName.of("GPB-0"));
+      }
+      if (return_type.equals(SGFilesystemFormatName.class)) {
+        return SGFilesystemFormatName.of("BLOCKFS");
       }
       if (return_type.equals(SGVersionRange.class)) {
         return SGVersionRange.of(
@@ -171,6 +186,10 @@ public final class SGBruteForceEqualityTest
           .setName("PK3")
           .build();
       }
+      if (return_type.equals(Supplier.class)) {
+        return (Supplier<Object>) () -> null;
+      }
+
       return Mockito.RETURNS_DEFAULTS.answer(invocation);
     }
   }

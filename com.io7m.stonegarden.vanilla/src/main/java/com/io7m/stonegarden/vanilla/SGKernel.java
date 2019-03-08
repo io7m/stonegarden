@@ -16,34 +16,38 @@
 
 package com.io7m.stonegarden.vanilla;
 
-import com.io7m.stonegarden.api.devices.SGStorageDeviceDescription;
-import com.io7m.stonegarden.api.devices.SGStorageDeviceType;
+import com.io7m.stonegarden.api.computer.SGComputerType;
+import com.io7m.stonegarden.api.kernels.SGKernelDescription;
+import com.io7m.stonegarden.api.kernels.SGKernelType;
 
 import java.util.Objects;
 import java.util.UUID;
 
-final class SGStorageDevice extends SGDevice implements SGStorageDeviceType
+final class SGKernel implements SGKernelType
 {
-  private final SGStorageDeviceDescription description;
+  private final UUID id;
+  private final SGComputerType computer;
+  private final SGKernelDescription description;
 
-  SGStorageDevice(
+  SGKernel(
     final SGSimulationInternalAPIType in_simulation,
-    final UUID in_uuid,
-    final SGStorageDeviceDescription in_description)
+    final UUID in_id,
+    final SGComputerType in_computer,
+    final SGKernelDescription in_description)
   {
-    super(in_simulation, in_description, in_uuid);
-    this.description = Objects.requireNonNull(in_description, "description");
+    Objects.requireNonNull(in_simulation, "simulation");
+
+    this.id =
+      Objects.requireNonNull(in_id, "id");
+    this.computer =
+      Objects.requireNonNull(in_computer, "computer");
+    this.description =
+      Objects.requireNonNull(in_description, "description");
   }
 
   @Override
-  public SGStorageDeviceDescription description()
+  public UUID id()
   {
-    return this.description;
-  }
-
-  @Override
-  protected void onClose()
-  {
-
+    return this.id;
   }
 }

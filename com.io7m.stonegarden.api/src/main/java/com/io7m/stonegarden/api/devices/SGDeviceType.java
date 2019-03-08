@@ -16,6 +16,7 @@
 
 package com.io7m.stonegarden.api.devices;
 
+import com.io7m.stonegarden.api.SGCloseableType;
 import com.io7m.stonegarden.api.SGIdentifiableType;
 import com.io7m.stonegarden.api.connectors.SGConnectorSocketType;
 import com.io7m.stonegarden.api.connectors.SGConnectorType;
@@ -26,7 +27,7 @@ import java.util.List;
  * A device instance.
  */
 
-public interface SGDeviceType extends SGIdentifiableType
+public interface SGDeviceType extends SGIdentifiableType, SGCloseableType
 {
   /**
    * @return The basic description of the device

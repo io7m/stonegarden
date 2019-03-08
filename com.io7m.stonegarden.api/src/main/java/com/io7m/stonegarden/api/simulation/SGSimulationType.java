@@ -34,6 +34,14 @@ public interface SGSimulationType extends AutoCloseable
     throws Exception;
 
   /**
+   * Step the simulation forward by the given number of seconds.
+   *
+   * @param seconds The seconds
+   */
+
+  void tick(double seconds);
+
+  /**
    * @return An observable that produces events
    */
 

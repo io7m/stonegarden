@@ -14,19 +14,18 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.io7m.stonegarden.api.kernels;
 
-import com.io7m.stonegarden.api.SGIdentifiableType;
+package com.io7m.stonegarden.api.simulation;
+
+import com.io7m.stonegarden.api.SGEventType;
+
+import java.util.UUID;
 
 /**
- * A kernel instance.
+ * The type of events involving the simulation as a whole.
  */
 
-public interface SGKernelType extends SGIdentifiableType
+public interface SGSimulationEventType extends SGEventType
 {
-  @Override
-  default String kind()
-  {
-    return "kernel";
-  }
+
 }
