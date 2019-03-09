@@ -17,7 +17,7 @@
 package com.io7m.stonegarden.api.programs;
 
 /**
- * A program body.
+ * A kernel body.
  */
 
 public interface SGProgramBodyType

@@ -16,25 +16,28 @@
 
 package com.io7m.stonegarden.vanilla;
 
+import com.io7m.stonegarden.api.computer.SGComputerBootOrderItem;
 import com.io7m.stonegarden.api.computer.SGComputerDescription;
 import com.io7m.stonegarden.api.computer.SGComputerEventBootFailed;
 import com.io7m.stonegarden.api.computer.SGComputerEventBooted;
 import com.io7m.stonegarden.api.computer.SGComputerEventBooting;
 import com.io7m.stonegarden.api.computer.SGComputerEventShutDown;
+import com.io7m.stonegarden.api.computer.SGComputerEventShuttingDown;
 import com.io7m.stonegarden.api.computer.SGComputerType;
-import com.io7m.stonegarden.api.connectors.SGConnectorEventDisconnected;
-import com.io7m.stonegarden.api.connectors.SGConnectorEventType;
-import com.io7m.stonegarden.api.devices.SGDeviceEventDestroying;
-import com.io7m.stonegarden.api.devices.SGDeviceEventType;
-import com.io7m.stonegarden.api.devices.SGDeviceNotConnectedException;
-import com.io7m.stonegarden.api.devices.SGStorageDeviceType;
+import com.io7m.stonegarden.api.devices.SGDeviceKernelInterfaceType;
+import com.io7m.stonegarden.api.kernels.SGKernelContextType;
+import com.io7m.stonegarden.api.kernels.SGKernelExecutableDescriptionType;
 import com.io7m.stonegarden.api.kernels.SGKernelType;
-import io.reactivex.disposables.Disposable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 /**
  * A computer.
@@ -42,14 +45,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 final class SGComputer extends SGDevice implements SGComputerType
 {
+  private static final Logger LOG = LoggerFactory.getLogger(SGComputer.class);
+
   private final UUID id;
   private final SGComputerDescription description;
   private final AtomicBoolean running;
   private final SGSimulationInternalAPIType simulation;
-  private final Optional<SGKernelType> installed_kernel;
-  private final Disposable device_sub;
-  private final Disposable connector_sub;
-  private SGStorageDeviceType boot_device;
+  private final LinkedList<String> text_buffer;
+  private final int text_buffer_limit;
+  private SGKernelType kernel;
 
   SGComputer(
     final SGSimulationInternalAPIType in_simulation,
@@ -66,71 +70,44 @@ final class SGComputer extends SGDevice implements SGComputerType
       Objects.requireNonNull(in_description, "description");
 
     this.running = new AtomicBoolean(false);
-    this.installed_kernel = Optional.empty();
-
-    this.device_sub =
-      in_simulation.events()
-        .ofType(SGDeviceEventType.class)
-        .subscribe(this::onDeviceEvent);
-
-    this.connector_sub =
-      in_simulation.events()
-      .ofType(SGConnectorEventType.class)
-      .subscribe(this::onConnectorEvent);
+    this.text_buffer = new LinkedList<>();
+    this.text_buffer_limit = 80;
   }
 
-  private void onConnectorEvent(
-    final SGConnectorEventType event)
+  private static Optional<SGKernelExecutableDescriptionType> findKernelWithMatchingName(
+    final SGComputerBootOrderItem item)
   {
-    if (event instanceof SGConnectorEventDisconnected) {
-      this.onConnectorDisconnected((SGConnectorEventDisconnected) event);
-    }
+    return item.device()
+      .kernels()
+      .stream()
+      .filter(exec -> executableMatches(item, exec))
+      .findFirst();
   }
 
-  private void onConnectorDisconnected(
-    final SGConnectorEventDisconnected event)
+  private static boolean executableMatches(
+    final SGComputerBootOrderItem item,
+    final SGKernelExecutableDescriptionType exec)
   {
-    if (this.boot_device != null) {
-      if (!this.simulation.deviceGraph().areDirectlyConnected(this, this.boot_device)) {
-        this.boot_device = null;
-      }
-    }
-  }
-
-  private void onDeviceEvent(
-    final SGDeviceEventType event)
-  {
-    if (event instanceof SGDeviceEventDestroying) {
-      this.onDeviceEventDestroying((SGDeviceEventDestroying) event);
-    }
-  }
-
-  private void onDeviceEventDestroying(
-    final SGDeviceEventDestroying event)
-  {
-    if (this.boot_device != null && Objects.equals(this.boot_device.id(), event.id())) {
-      this.boot_device = null;
-    }
-  }
-
-  @Override
-  public void boot()
-  {
-    if (this.running.compareAndSet(false, true)) {
-      this.simulation.publishEvent(SGComputerEventBooting.of(this.id));
-      if (this.installed_kernel.isPresent()) {
-        this.simulation.publishEvent(SGComputerEventBooted.of(this.id));
-      } else {
-        this.running.set(false);
-        this.simulation.publishEvent(SGComputerEventBootFailed.of(this.id, "No kernel installed"));
-      }
-    }
+    final var description = exec.description();
+    return Objects.equals(description.name(), item.name())
+      && Objects.equals(description.version(), item.version());
   }
 
   @Override
   public void shutdown()
   {
     if (this.running.compareAndSet(true, false)) {
+      this.simulation.publishEvent(SGComputerEventShuttingDown.of(this.id));
+
+      if (this.kernel != null) {
+        try {
+          this.kernel.onShutDown();
+        } catch (final Exception e) {
+          this.writeConsole("kernel shutdown failed: %s", e.getMessage());
+          LOG.debug("kernel shutdown failed: ", e);
+        }
+      }
+
       this.simulation.publishEvent(SGComputerEventShutDown.of(this.id));
     }
   }
@@ -148,29 +125,124 @@ final class SGComputer extends SGDevice implements SGComputerType
   }
 
   @Override
-  public void setBootDevice(
-    final SGStorageDeviceType device)
-    throws SGDeviceNotConnectedException
+  public void boot(final List<SGComputerBootOrderItem> order)
   {
-    Objects.requireNonNull(device, "device");
+    Objects.requireNonNull(order, "order");
 
-    if (this.simulation.deviceGraph().areDirectlyConnected(this, device)) {
-      this.boot_device = device;
-    } else {
-      throw new SGDeviceNotConnectedException(this, device);
+    if (this.running.compareAndSet(false, true)) {
+      this.simulation.publishEvent(SGComputerEventBooting.of(this.id));
+
+      for (final var item : order) {
+        final var device = item.device();
+        if (!this.simulation.deviceGraph().areDirectlyConnected(this, device)) {
+          this.writeConsole("device %s is not connected", device.id());
+          continue;
+        }
+
+        final var kernel_desc_found = findKernelWithMatchingName(item);
+        if (kernel_desc_found.isEmpty()) {
+          this.writeConsole(
+            "no kernel found on %s with name %s:%s",
+            device.id(),
+            item.name(),
+            item.version().toHumanString());
+          continue;
+        }
+
+        final var kernel_desc = kernel_desc_found.get();
+        if (!this.kernelIsCompatible(kernel_desc)) {
+          this.writeConsole("kernel is not compatible with this architecture");
+          continue;
+        }
+
+        final var context = new KernelContext(this);
+        final var executable = kernel_desc.executable();
+
+        try {
+          this.kernel = executable.execute(context, item.parameters());
+        } catch (final Exception e) {
+          this.simulation.publishEvent(SGComputerEventBootFailed.of(this.id, e.getMessage()));
+          this.running.set(false);
+        }
+
+        this.simulation.publishEvent(SGComputerEventBooted.of(this.id));
+        this.running.set(true);
+
+        try {
+          this.kernel.onStart();
+        } catch (final Exception e) {
+          LOG.error("[{}]: kernel start failed: ", this.id.toString(), e);
+        }
+        return;
+      }
+
+      this.simulation.publishEvent(SGComputerEventBootFailed.of(this.id, "No kernel available"));
+      this.running.set(false);
     }
   }
 
-  @Override
-  public Optional<SGStorageDeviceType> bootDevice()
+  private boolean kernelIsCompatible(
+    final SGKernelExecutableDescriptionType kernel_exec)
   {
-    return Optional.ofNullable(this.boot_device);
+    return Objects.equals(
+      kernel_exec.description().compatibility().architecture(),
+      this.description.architecture());
+  }
+
+  private void writeConsole(
+    final String format,
+    final Object... arguments)
+  {
+    Objects.requireNonNull(format, "format");
+
+    final var message = String.format(format, arguments);
+    message.lines().forEach(line -> {
+      LOG.trace("[{}]: console: {}", this.id(), line);
+      if ((!this.text_buffer.isEmpty()) && this.text_buffer.size() >= this.text_buffer_limit) {
+        this.text_buffer.removeFirst();
+      }
+      this.text_buffer.add(line);
+    });
   }
 
   @Override
   protected void onClose()
   {
-    this.device_sub.dispose();
-    this.connector_sub.dispose();
+
+  }
+
+  private static final class KernelContext implements SGKernelContextType
+  {
+    private final SGComputer computer;
+
+    KernelContext(
+      final SGComputer in_computer)
+    {
+      this.computer = Objects.requireNonNull(in_computer, "computer");
+    }
+
+    @Override
+    public List<SGDeviceKernelInterfaceType> connectedDevices()
+    {
+      return this.computer.simulation.deviceGraph()
+        .devicesConnectedTo(this.computer)
+        .map(device -> (SGDeviceKernelInterfaceType) device)
+        .collect(Collectors.toList());
+    }
+
+    @Override
+    public void writeConsole(
+      final String format,
+      final Object... arguments)
+    {
+      this.computer.writeConsole(format, arguments);
+    }
+
+    @Override
+    public void shutdown()
+    {
+      LOG.debug("[{}]: kernel triggered shutdown", this.computer.id.toString());
+      this.computer.shutdown();
+    }
   }
 }

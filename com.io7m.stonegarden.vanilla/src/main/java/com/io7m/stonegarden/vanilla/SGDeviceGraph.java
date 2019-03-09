@@ -41,6 +41,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+// CHECKSTYLE:OFF
 
 public final class SGDeviceGraph
 {
@@ -260,6 +263,17 @@ public final class SGDeviceGraph
   {
     Objects.requireNonNull(device, "device");
     this.device_graph.addVertex(device);
+  }
+
+  public Stream<SGDeviceType> devicesConnectedTo(final SGDeviceType host)
+  {
+    Objects.requireNonNull(host, "device");
+
+    return this.device_graph.edgesOf(host)
+      .stream()
+      .flatMap(edge -> Stream.of(edge.device0, edge.device1))
+      .filter(device -> !Objects.equals(device, host))
+      .distinct();
   }
 
   private static final class ConnectorSocketEdge

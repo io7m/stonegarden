@@ -14,13 +14,13 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.io7m.stonegarden.api.programs;
+package com.io7m.stonegarden.api.devices;
 
 /**
- * A program instance.
+ * The view of a device exposed to kernels.
  */
 
-public interface SGProgramType
+public interface SGDeviceKernelInterfaceType extends SGDeviceType
 {
 
 }

@@ -16,6 +16,12 @@
 
 package com.io7m.stonegarden.api.devices;
 
+import com.io7m.stonegarden.api.kernels.SGKernelExecutableDescriptionType;
+
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Objects;
+
 /**
  * A storage device instance.
  */
@@ -30,4 +36,38 @@ public interface SGStorageDeviceType extends SGDeviceType
   {
     return "storage-device";
   }
+
+  /**
+   * @return The amount of space used on the device
+   */
+
+  BigInteger spaceUsedOctets();
+
+  /**
+   * @return The amount of space available on the device
+   */
+
+  default BigInteger spaceAvailableOctets()
+  {
+    return this.description().spaceCapacityOctets().subtract(this.spaceUsedOctets());
+  }
+
+  /**
+   * @param required The number of octets required
+   *
+   * @return {@code true} if {@code required} or more octets of space are available on the device
+   */
+
+  default boolean spaceAvailableFor(
+    final BigInteger required)
+  {
+    Objects.requireNonNull(required, "required");
+    return this.spaceAvailableOctets().compareTo(required) >= 0;
+  }
+
+  /**
+   * @return The list of bootable kernels available on the storage device
+   */
+
+  List<SGKernelExecutableDescriptionType> kernels();
 }

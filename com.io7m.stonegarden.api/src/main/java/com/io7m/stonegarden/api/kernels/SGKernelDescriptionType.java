@@ -20,6 +20,8 @@ import com.io7m.immutables.styles.ImmutablesStyleType;
 import com.io7m.stonegarden.api.SGVersion;
 import org.immutables.value.Value;
 
+import java.math.BigInteger;
+
 /**
  * Kernel descriptions.
  */
@@ -41,4 +43,18 @@ public interface SGKernelDescriptionType
 
   @Value.Parameter
   SGVersion version();
+
+  /**
+   * @return The kernel compatibility information
+   */
+
+  @Value.Parameter
+  SGKernelCompatibility compatibility();
+
+  /**
+   * @return The storage space required for the kernel
+   */
+
+  @Value.Parameter
+  BigInteger sizeOctets();
 }

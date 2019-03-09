@@ -14,13 +14,26 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.io7m.stonegarden.api.programs;
+package com.io7m.stonegarden.api.kernels;
+
+import java.util.Properties;
 
 /**
- * A program instance.
+ * A kernel executable.
  */
 
-public interface SGProgramType
+public interface SGKernelExecutableType
 {
+  /**
+   * Start the kernel.
+   *
+   * @param context    The kernel execution context
+   * @param parameters The kernel arguments
+   *
+   * @return The running kernel
+   */
 
+  SGKernelType execute(
+    SGKernelContextType context,
+    Properties parameters);
 }

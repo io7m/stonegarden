@@ -14,13 +14,49 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.io7m.stonegarden.api.programs;
+
+package com.io7m.stonegarden.api.computer;
+
+import com.io7m.immutables.styles.ImmutablesStyleType;
+import com.io7m.stonegarden.api.SGVersion;
+import com.io7m.stonegarden.api.devices.SGStorageDeviceType;
+import org.immutables.value.Value;
+
+import java.util.Properties;
 
 /**
- * A program instance.
+ * An item in a computer's boot order.
  */
 
-public interface SGProgramType
+@ImmutablesStyleType
+@Value.Immutable
+public interface SGComputerBootOrderItemType
 {
+  /**
+   * @return The kernel name
+   */
 
+  @Value.Parameter
+  String name();
+
+  /**
+   * @return The kernel version
+   */
+
+  @Value.Parameter
+  SGVersion version();
+
+  /**
+   * @return Parameters passed to the kernel
+   */
+
+  @Value.Parameter
+  Properties parameters();
+
+  /**
+   * @return The device from which a kernel should be loaded
+   */
+
+  @Value.Parameter
+  SGStorageDeviceType device();
 }

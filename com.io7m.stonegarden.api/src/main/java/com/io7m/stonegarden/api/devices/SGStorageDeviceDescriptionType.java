@@ -19,8 +19,10 @@ package com.io7m.stonegarden.api.devices;
 import com.io7m.immutables.styles.ImmutablesStyleType;
 import com.io7m.stonegarden.api.connectors.SGConnectorDescription;
 import com.io7m.stonegarden.api.connectors.SGConnectorSocketDescription;
+import com.io7m.stonegarden.api.kernels.SGKernelExecutableDescription;
 import org.immutables.value.Value;
 
+import java.math.BigInteger;
 import java.util.List;
 
 /**
@@ -38,4 +40,22 @@ public interface SGStorageDeviceDescriptionType extends SGDeviceDescriptionType
   @Override
   @Value.Parameter
   List<SGConnectorDescription> connectors();
+
+  /**
+   * @return The size of the storage device in octets
+   */
+
+  @Value.Parameter
+  @Value.Default
+  default BigInteger spaceCapacityOctets()
+  {
+    return BigInteger.ZERO;
+  }
+
+  /**
+   * @return The kernels that will initially be present on the device
+   */
+
+  @Value.Parameter
+  List<SGKernelExecutableDescription> kernels();
 }

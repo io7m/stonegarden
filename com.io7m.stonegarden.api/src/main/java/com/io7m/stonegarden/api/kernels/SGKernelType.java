@@ -16,17 +16,27 @@
 
 package com.io7m.stonegarden.api.kernels;
 
-import com.io7m.stonegarden.api.SGIdentifiableType;
-
 /**
  * A kernel instance.
  */
 
-public interface SGKernelType extends SGIdentifiableType
+public interface SGKernelType
 {
-  @Override
-  default String kind()
-  {
-    return "kernel";
-  }
+  /**
+   * Called when the kernel is started.
+   *
+   * @throws Exception If required
+   */
+
+  void onStart()
+    throws Exception;
+
+  /**
+   * Called when the kernel is about to shut down.
+   *
+   * @throws Exception If required
+   */
+
+  void onShutDown()
+    throws Exception;
 }

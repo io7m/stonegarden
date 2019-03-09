@@ -18,11 +18,9 @@
 package com.io7m.stonegarden.api.simulation;
 
 import com.io7m.immutables.styles.ImmutablesStyleType;
-import com.io7m.stonegarden.api.devices.SGDeviceEventType;
 import org.immutables.value.Value;
 
 import java.math.BigInteger;
-import java.util.UUID;
 
 /**
  * The simulation should step forward.

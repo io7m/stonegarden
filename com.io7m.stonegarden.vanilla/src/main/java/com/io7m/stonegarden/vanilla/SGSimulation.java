@@ -80,8 +80,9 @@ final class SGSimulation implements SGSimulationType, SGSimulationInternalAPITyp
   {
     this.checkNotClosed();
 
-    this.events.onNext(SGSimulationEventTick.of(this.frame, seconds));
+    final var current_frame = this.frame;
     this.frame = this.frame.add(BigInteger.ONE);
+    this.events.onNext(SGSimulationEventTick.of(current_frame, seconds));
   }
 
   @Override

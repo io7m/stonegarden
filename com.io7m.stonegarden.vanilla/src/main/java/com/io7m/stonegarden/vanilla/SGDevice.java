@@ -22,7 +22,7 @@ import com.io7m.stonegarden.api.connectors.SGConnectorType;
 import com.io7m.stonegarden.api.devices.SGDeviceDescriptionType;
 import com.io7m.stonegarden.api.devices.SGDeviceEventDestroyed;
 import com.io7m.stonegarden.api.devices.SGDeviceEventDestroying;
-import com.io7m.stonegarden.api.devices.SGDeviceType;
+import com.io7m.stonegarden.api.devices.SGDeviceKernelInterfaceType;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,7 +32,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-abstract class SGDevice extends SGIdentifiable implements SGDeviceType
+abstract class SGDevice extends SGIdentifiable implements SGDeviceKernelInterfaceType
 {
   private final SGSimulationInternalAPIType simulation;
   private final SGDeviceDescriptionType description;

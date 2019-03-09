@@ -17,12 +17,21 @@
 package com.io7m.stonegarden.tests;
 
 import com.io7m.stonegarden.api.SGArchitecture;
+import com.io7m.stonegarden.api.SGException;
 import com.io7m.stonegarden.api.SGVersion;
 import com.io7m.stonegarden.api.SGVersionRange;
 import com.io7m.stonegarden.api.connectors.SGConnectorProtocol;
 import com.io7m.stonegarden.api.connectors.SGConnectorProtocolName;
+import com.io7m.stonegarden.api.connectors.SGConnectorSocketType;
+import com.io7m.stonegarden.api.connectors.SGConnectorType;
+import com.io7m.stonegarden.api.devices.SGStorageDeviceDescription;
+import com.io7m.stonegarden.api.devices.SGStorageDeviceType;
 import com.io7m.stonegarden.api.filesystem.SGFilesystemFormat;
 import com.io7m.stonegarden.api.filesystem.SGFilesystemFormatName;
+import com.io7m.stonegarden.api.kernels.SGKernelCompatibility;
+import com.io7m.stonegarden.api.kernels.SGKernelDescription;
+import com.io7m.stonegarden.api.kernels.SGKernelExecutableDescriptionType;
+import com.io7m.stonegarden.api.kernels.SGKernelExecutableType;
 import com.io7m.stonegarden.api.programs.SGProgramCompatibility;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Assertions;
@@ -33,8 +42,11 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.lang.reflect.Field;
+import java.math.BigInteger;
 import java.net.URI;
+import java.util.List;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -43,11 +55,13 @@ import java.util.stream.Stream;
 public final class SGBruteForceEqualityTest
 {
   private static final Class<?> CLASSES[] = {
+    com.io7m.stonegarden.api.computer.SGComputerBootOrderItem.class,
     com.io7m.stonegarden.api.computer.SGComputerDescription.class,
     com.io7m.stonegarden.api.computer.SGComputerEventBooted.class,
     com.io7m.stonegarden.api.computer.SGComputerEventBootFailed.class,
     com.io7m.stonegarden.api.computer.SGComputerEventBooting.class,
     com.io7m.stonegarden.api.computer.SGComputerEventShutDown.class,
+    com.io7m.stonegarden.api.computer.SGComputerEventShuttingDown.class,
     com.io7m.stonegarden.api.connectors.SGConnectorDescription.class,
     com.io7m.stonegarden.api.connectors.SGConnectorEventConnected.class,
     com.io7m.stonegarden.api.connectors.SGConnectorEventDisconnected.class,
@@ -61,9 +75,12 @@ public final class SGBruteForceEqualityTest
     com.io7m.stonegarden.api.filesystem.SGFilesystemDescription.class,
     com.io7m.stonegarden.api.filesystem.SGFilesystemFormat.class,
     com.io7m.stonegarden.api.filesystem.SGFilesystemFormatName.class,
+    com.io7m.stonegarden.api.kernels.SGKernelCompatibility.class,
     com.io7m.stonegarden.api.kernels.SGKernelDescription.class,
+    com.io7m.stonegarden.api.kernels.SGKernelExecutableDescription.class,
     com.io7m.stonegarden.api.programs.SGProgramCompatibility.class,
     com.io7m.stonegarden.api.programs.SGProgramDescription.class,
+    com.io7m.stonegarden.api.simulation.SGSimulationEventTick.class,
     com.io7m.stonegarden.api.SGArchitecture.class,
     com.io7m.stonegarden.api.SGVersion.class,
     com.io7m.stonegarden.api.SGVersionRange.class,
@@ -139,6 +156,9 @@ public final class SGBruteForceEqualityTest
       if (return_type.equals(String.class)) {
         return "xyz";
       }
+      if (return_type.equals(BigInteger.class)) {
+        return BigInteger.valueOf(23L);
+      }
       if (return_type.equals(URI.class)) {
         return URI.create("stonegarden:com.io7m.xyz");
       }
@@ -147,6 +167,16 @@ public final class SGBruteForceEqualityTest
       }
       if (return_type.equals(UUID.class)) {
         return UUID.randomUUID();
+      }
+      if (return_type.equals(Properties.class)) {
+        return new Properties();
+      }
+      if (return_type.equals(SGKernelCompatibility.class)) {
+        return SGKernelCompatibility.builder()
+          .setArchitecture(SGArchitecture.builder()
+                             .setName("PK3")
+                             .build())
+          .build();
       }
       if (return_type.equals(SGProgramCompatibility.class)) {
         return SGProgramCompatibility.of(
@@ -159,6 +189,63 @@ public final class SGBruteForceEqualityTest
           SGArchitecture.builder()
             .setName("PK3")
             .build());
+      }
+      if (return_type.equals(SGStorageDeviceType.class)) {
+        return new SGStorageDeviceType()
+        {
+          @Override
+          public UUID id()
+          {
+            return null;
+          }
+
+          @Override
+          public void close()
+            throws SGException
+          {
+
+          }
+
+          @Override
+          public SGStorageDeviceDescription description()
+          {
+            return null;
+          }
+
+          @Override
+          public List<SGConnectorSocketType> sockets()
+          {
+            return null;
+          }
+
+          @Override
+          public List<SGConnectorType> connectors()
+          {
+            return null;
+          }
+
+          @Override
+          public BigInteger spaceUsedOctets()
+          {
+            return null;
+          }
+
+          @Override
+          public List<SGKernelExecutableDescriptionType> kernels()
+          {
+            return null;
+          }
+        };
+      }
+      if (return_type.equals(SGKernelExecutableType.class)) {
+        return (SGKernelExecutableType) (context, parameters) -> null;
+      }
+      if (return_type.equals(SGKernelDescription.class)) {
+        return SGKernelDescription.of(
+          "xyz",
+          SGVersion.of(1, 0, 0),
+          SGKernelCompatibility.of(SGArchitecture.of("PK3")),
+          BigInteger.TEN);
       }
       if (return_type.equals(SGFilesystemFormat.class)) {
         return SGFilesystemFormat.builder()

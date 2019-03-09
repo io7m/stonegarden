@@ -19,8 +19,6 @@ package com.io7m.stonegarden.api.simulation;
 
 import com.io7m.stonegarden.api.SGEventType;
 
-import java.util.UUID;
-
 /**
  * The type of events involving the simulation as a whole.
  */

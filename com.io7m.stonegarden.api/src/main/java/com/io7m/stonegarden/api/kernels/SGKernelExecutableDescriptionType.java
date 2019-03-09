@@ -14,13 +14,30 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.io7m.stonegarden.api.programs;
+package com.io7m.stonegarden.api.kernels;
+
+import com.io7m.immutables.styles.ImmutablesStyleType;
+import org.immutables.value.Value;
 
 /**
- * A program instance.
+ * A kernel executable description.
  */
 
-public interface SGProgramType
+@ImmutablesStyleType
+@Value.Immutable
+public interface SGKernelExecutableDescriptionType
 {
+  /**
+   * @return A description of the kernel that will be executed
+   */
 
+  @Value.Parameter
+  SGKernelDescription description();
+
+  /**
+   * @return The kernel executable
+   */
+
+  @Value.Parameter
+  SGKernelExecutableType executable();
 }

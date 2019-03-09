@@ -18,7 +18,6 @@
 package com.io7m.stonegarden.api.devices;
 
 import com.io7m.immutables.styles.ImmutablesStyleType;
-import com.io7m.stonegarden.api.computer.SGComputerEventType;
 import org.immutables.value.Value;
 
 import java.util.UUID;

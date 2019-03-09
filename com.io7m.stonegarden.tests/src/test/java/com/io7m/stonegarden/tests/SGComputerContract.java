@@ -18,21 +18,21 @@ package com.io7m.stonegarden.tests;
 
 import com.io7m.stonegarden.api.SGArchitecture;
 import com.io7m.stonegarden.api.SGEventType;
+import com.io7m.stonegarden.api.SGException;
+import com.io7m.stonegarden.api.SGVersion;
+import com.io7m.stonegarden.api.computer.SGComputerBootOrderItem;
 import com.io7m.stonegarden.api.computer.SGComputerDescription;
 import com.io7m.stonegarden.api.computer.SGComputerEventBootFailed;
 import com.io7m.stonegarden.api.computer.SGComputerEventBooting;
 import com.io7m.stonegarden.api.connectors.SGConnectorDescription;
-import com.io7m.stonegarden.api.connectors.SGConnectorEventConnected;
-import com.io7m.stonegarden.api.connectors.SGConnectorEventDisconnected;
 import com.io7m.stonegarden.api.connectors.SGConnectorProtocol;
 import com.io7m.stonegarden.api.connectors.SGConnectorProtocolName;
 import com.io7m.stonegarden.api.connectors.SGConnectorSocketDescription;
 import com.io7m.stonegarden.api.devices.SGDeviceEventCreated;
-import com.io7m.stonegarden.api.devices.SGDeviceEventDestroyed;
-import com.io7m.stonegarden.api.devices.SGDeviceEventDestroying;
-import com.io7m.stonegarden.api.devices.SGDeviceNotConnectedException;
 import com.io7m.stonegarden.api.devices.SGStorageDeviceDescription;
 import com.io7m.stonegarden.api.simulation.SGSimulationType;
+import com.io7m.stonegarden.vanilla.SGKernelHelloWorld;
+import com.io7m.stonegarden.vanilla.SGKernelInstaller;
 import io.reactivex.disposables.Disposable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -40,8 +40,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Optional;
+import java.util.List;
+import java.util.Properties;
 
 public abstract class SGComputerContract
 {
@@ -104,147 +106,6 @@ public abstract class SGComputerContract
   }
 
   @Test
-  public final void testCreateComputerBootInstallKernel()
-    throws Exception
-  {
-    final var device =
-      this.simulation.createStorageDevice(
-        SGStorageDeviceDescription.builder()
-          .addConnectors(SGConnectorDescription.of(HARDWARE_PORT_PROTOCOL_0))
-          .build());
-
-    final var computer =
-      this.simulation.createComputer(
-        SGComputerDescription.builder()
-          .setArchitecture(ARCH_0)
-          .addSockets(SGConnectorSocketDescription.of(HARDWARE_PORT_PROTOCOL_0))
-          .build());
-
-    final var socket = computer.sockets().get(0);
-    final var connector = device.connectors().get(0);
-
-    connector.connectTo(socket);
-
-    computer.setBootDevice(device);
-    computer.boot();
-    computer.shutdown();
-
-    Assertions.assertEquals(5, this.events.size(), "Correct event count");
-    EventAssertions.isTypeAndMatches(
-      SGDeviceEventCreated.class,
-      this.events,
-      0,
-      e -> Assertions.assertEquals(device.id(), e.id()));
-    EventAssertions.isTypeAndMatches(
-      SGDeviceEventCreated.class,
-      this.events,
-      1,
-      e -> Assertions.assertEquals(computer.id(), e.id()));
-    EventAssertions.isTypeAndMatches(
-      SGConnectorEventConnected.class,
-      this.events,
-      2,
-      e -> Assertions.assertEquals(connector.id(), e.connector()));
-    EventAssertions.isTypeAndMatches(
-      SGComputerEventBooting.class,
-      this.events,
-      3,
-      e -> Assertions.assertEquals(computer.id(), e.id()));
-    EventAssertions.isTypeAndMatches(
-      SGComputerEventBootFailed.class,
-      this.events,
-      4,
-      e -> {
-        Assertions.assertEquals(computer.id(), e.id());
-        Assertions.assertEquals("No kernel installed", e.message());
-      });
-  }
-
-  @Test
-  public final void testCreateComputerBootDeviceDeleted()
-    throws Exception
-  {
-    final var device =
-      this.simulation.createStorageDevice(
-        SGStorageDeviceDescription.builder()
-          .addConnectors(SGConnectorDescription.of(HARDWARE_PORT_PROTOCOL_0))
-          .build());
-
-    final var computer =
-      this.simulation.createComputer(
-        SGComputerDescription.builder()
-          .setArchitecture(ARCH_0)
-          .addSockets(SGConnectorSocketDescription.of(HARDWARE_PORT_PROTOCOL_0))
-          .build());
-
-    final var socket = computer.sockets().get(0);
-    final var connector = device.connectors().get(0);
-
-    connector.connectTo(socket);
-    Assertions.assertEquals(Optional.empty(), computer.bootDevice());
-    computer.setBootDevice(device);
-    Assertions.assertEquals(Optional.of(device), computer.bootDevice());
-    device.close();
-    Assertions.assertEquals(Optional.empty(), computer.bootDevice());
-
-    Assertions.assertEquals(6, this.events.size(), "Correct event count");
-    EventAssertions.isTypeAndMatches(
-      SGDeviceEventCreated.class,
-      this.events,
-      0,
-      e -> Assertions.assertEquals(device.id(), e.id()));
-    EventAssertions.isTypeAndMatches(
-      SGDeviceEventCreated.class,
-      this.events,
-      1,
-      e -> Assertions.assertEquals(computer.id(), e.id()));
-    EventAssertions.isTypeAndMatches(
-      SGConnectorEventConnected.class,
-      this.events,
-      2,
-      e -> Assertions.assertEquals(connector.id(), e.connector()));
-    EventAssertions.isTypeAndMatches(
-      SGConnectorEventDisconnected.class,
-      this.events,
-      3,
-      e -> Assertions.assertEquals(connector.id(), e.connector()));
-    EventAssertions.isTypeAndMatches(
-      SGDeviceEventDestroying.class,
-      this.events,
-      4,
-      e -> Assertions.assertEquals(device.id(), e.id()));
-    EventAssertions.isTypeAndMatches(
-      SGDeviceEventDestroyed.class,
-      this.events,
-      5,
-      e -> Assertions.assertEquals(device.id(), e.id()));
-  }
-
-  @Test
-  public final void testCreateComputerBootDeviceNotConnected()
-    throws Exception
-  {
-    final var device =
-      this.simulation.createStorageDevice(
-        SGStorageDeviceDescription.builder()
-          .addConnectors(SGConnectorDescription.of(HARDWARE_PORT_PROTOCOL_0))
-          .build());
-
-    final var computer =
-      this.simulation.createComputer(
-        SGComputerDescription.builder()
-          .setArchitecture(ARCH_0)
-          .addSockets(SGConnectorSocketDescription.of(HARDWARE_PORT_PROTOCOL_0))
-          .build());
-
-    final var ex =
-      Assertions.assertThrows(
-        SGDeviceNotConnectedException.class,
-        () -> computer.setBootDevice(device));
-    this.logger.debug("exception: ", ex);
-  }
-
-  @Test
   public final void testCreateComputerBootNoKernel()
   {
     final var computer =
@@ -253,7 +114,7 @@ public abstract class SGComputerContract
           .setArchitecture(ARCH_0)
           .build());
 
-    computer.boot();
+    computer.boot(List.of());
     computer.shutdown();
 
     Assertions.assertEquals(3, this.events.size(), "Correct event count");
@@ -273,8 +134,103 @@ public abstract class SGComputerContract
       2,
       e -> {
         Assertions.assertEquals(computer.id(), e.id());
-        Assertions.assertEquals("No kernel installed", e.message());
+        Assertions.assertEquals("No kernel available", e.message());
       });
+  }
+
+  @Test
+  public final void testCreateComputerBootInstaller()
+    throws SGException
+  {
+    final var computer =
+      this.simulation.createComputer(
+        SGComputerDescription.builder()
+          .setArchitecture(ARCH_0)
+          .addSockets(SGConnectorSocketDescription.of(HARDWARE_PORT_PROTOCOL_0))
+          .build());
+
+    final var device =
+      this.simulation.createStorageDevice(
+        SGStorageDeviceDescription.builder()
+          .addConnectors(SGConnectorDescription.of(HARDWARE_PORT_PROTOCOL_0))
+          .setSpaceCapacityOctets(BigInteger.valueOf(1_000_000_000L))
+          .addKernels(SGKernelInstaller.create(
+            ARCH_0, SGKernelHelloWorld.get(ARCH_0, BigInteger.valueOf(5855104L))))
+          .build());
+
+    final var connector = device.connectors().get(0);
+    final var socket = computer.sockets().get(0);
+
+    final var boot_parameters = new Properties();
+    boot_parameters.setProperty(
+      "target_device",
+      device.id().toString());
+
+    Assertions.assertEquals(0L, device.spaceUsedOctets().longValue());
+
+    connector.connectTo(socket);
+    computer.boot(
+      List.of(SGComputerBootOrderItem.of(
+        "INSTALLER",
+        SGVersion.of(0, 1, 0),
+        boot_parameters,
+        device
+      )));
+
+    Assertions.assertFalse(computer.isRunning());
+    Assertions.assertEquals(5855104L, device.spaceUsedOctets().longValue());
+
+    computer.boot(
+      List.of(SGComputerBootOrderItem.of(
+        "HELLO",
+        SGVersion.of(0, 1, 0),
+        new Properties(),
+        device
+      )));
+
+    Assertions.assertTrue(computer.isRunning());
+    computer.shutdown();
+    Assertions.assertFalse(computer.isRunning());
+  }
+
+  @Test
+  public final void testCreateComputerBootInstallerTooLarge()
+    throws SGException
+  {
+    final var computer =
+      this.simulation.createComputer(
+        SGComputerDescription.builder()
+          .setArchitecture(ARCH_0)
+          .addSockets(SGConnectorSocketDescription.of(HARDWARE_PORT_PROTOCOL_0))
+          .build());
+
+    final var device =
+      this.simulation.createStorageDevice(
+        SGStorageDeviceDescription.builder()
+          .addConnectors(SGConnectorDescription.of(HARDWARE_PORT_PROTOCOL_0))
+          .setSpaceCapacityOctets(BigInteger.valueOf(1_000L))
+          .addKernels(SGKernelInstaller.create(
+            ARCH_0, SGKernelHelloWorld.get(ARCH_0, BigInteger.valueOf(20_000_000L))))
+          .build());
+
+    final var connector = device.connectors().get(0);
+    final var socket = computer.sockets().get(0);
+
+    final var boot_parameters = new Properties();
+    boot_parameters.setProperty(
+      "target_device",
+      device.id().toString());
+
+    Assertions.assertEquals(0L, device.spaceUsedOctets().longValue());
+
+    connector.connectTo(socket);
+    computer.boot(
+      List.of(SGComputerBootOrderItem.of(
+        "INSTALLER",
+        SGVersion.of(0, 1, 0),
+        boot_parameters,
+        device
+      )));
   }
 
   private void eventPublished(

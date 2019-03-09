@@ -60,4 +60,19 @@ public interface SGVersionType extends Comparable<SGVersionType>
       .thenComparingInt(SGVersionType::patch)
       .compare(this, other);
   }
+
+  /**
+   * @return The version as a string
+   */
+
+  default String toHumanString()
+  {
+    return new StringBuilder(16)
+      .append(this.major())
+      .append('.')
+      .append(this.minor())
+      .append('.')
+      .append(this.patch())
+      .toString();
+  }
 }

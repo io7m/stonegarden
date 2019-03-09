@@ -14,13 +14,40 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.io7m.stonegarden.api.programs;
+package com.io7m.stonegarden.api.kernels;
+
+import com.io7m.stonegarden.api.devices.SGDeviceKernelInterfaceType;
+
+import java.util.List;
 
 /**
- * A program instance.
+ * The execution context of a kernel.
  */
 
-public interface SGProgramType
+public interface SGKernelContextType
 {
+  /**
+   * @return A snapshot of the currently connected devices
+   */
 
+  List<SGDeviceKernelInterfaceType> connectedDevices();
+
+  /**
+   * Write a message to the console.
+   *
+   * @param format    A format string
+   * @param arguments Format arguments
+   *
+   * @see String#format(String, Object...)
+   */
+
+  void writeConsole(
+    String format,
+    Object... arguments);
+
+  /**
+   * Tell the computer to shut down.
+   */
+
+  void shutdown();
 }

@@ -14,13 +14,15 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.io7m.stonegarden.api.programs;
+package com.io7m.stonegarden.api.kernels;
+
+import com.io7m.stonegarden.api.SGEventType;
 
 /**
- * A program instance.
+ * The type of events involving kernels.
  */
 
-public interface SGProgramType
+public interface SGKernelEventType extends SGEventType
 {
 
 }

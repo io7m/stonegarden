@@ -17,14 +17,28 @@
 package com.io7m.stonegarden.vanilla;
 
 import com.io7m.stonegarden.api.devices.SGStorageDeviceDescription;
-import com.io7m.stonegarden.api.devices.SGStorageDeviceType;
+import com.io7m.stonegarden.api.devices.SGStorageDeviceKernelInterfaceType;
+import com.io7m.stonegarden.api.devices.SGStorageDeviceOutOfSpaceException;
+import com.io7m.stonegarden.api.kernels.SGKernelExecutableDescription;
+import com.io7m.stonegarden.api.kernels.SGKernelExecutableDescriptionType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-final class SGStorageDevice extends SGDevice implements SGStorageDeviceType
+final class SGStorageDevice extends SGDevice implements SGStorageDeviceKernelInterfaceType
 {
+  private static final Logger LOG = LoggerFactory.getLogger(SGStorageDevice.class);
+
   private final SGStorageDeviceDescription description;
+  private final ArrayList<SGKernelExecutableDescriptionType> kernels;
+  private final List<SGKernelExecutableDescriptionType> kernels_read;
+  private BigInteger space_used;
 
   SGStorageDevice(
     final SGSimulationInternalAPIType in_simulation,
@@ -33,6 +47,9 @@ final class SGStorageDevice extends SGDevice implements SGStorageDeviceType
   {
     super(in_simulation, in_description, in_uuid);
     this.description = Objects.requireNonNull(in_description, "description");
+    this.kernels = new ArrayList<>(in_description.kernels());
+    this.kernels_read = Collections.unmodifiableList(this.kernels);
+    this.space_used = BigInteger.valueOf(0L);
   }
 
   @Override
@@ -42,8 +59,40 @@ final class SGStorageDevice extends SGDevice implements SGStorageDeviceType
   }
 
   @Override
+  public BigInteger spaceUsedOctets()
+  {
+    return this.space_used;
+  }
+
+  @Override
+  public List<SGKernelExecutableDescriptionType> kernels()
+  {
+    return this.kernels_read;
+  }
+
+  @Override
   protected void onClose()
   {
 
+  }
+
+  @Override
+  public void addKernel(
+    final SGKernelExecutableDescription kernel)
+    throws SGStorageDeviceOutOfSpaceException
+  {
+    final var required = kernel.description().sizeOctets();
+    if (!this.spaceAvailableFor(required)) {
+      throw new SGStorageDeviceOutOfSpaceException(this, required);
+    }
+
+    LOG.debug(
+      "[{}]: add kernel {} {} ({} octets)",
+      this.id(),
+      kernel.description().name(),
+      kernel.description().version().toHumanString(),
+      required);
+    this.kernels.add(Objects.requireNonNull(kernel, "kernel"));
+    this.space_used = this.space_used.add(required);
   }
 }

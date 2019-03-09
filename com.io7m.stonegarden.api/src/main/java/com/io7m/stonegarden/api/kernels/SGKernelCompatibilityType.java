@@ -14,13 +14,24 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.io7m.stonegarden.api.programs;
+package com.io7m.stonegarden.api.kernels;
+
+import com.io7m.immutables.styles.ImmutablesStyleType;
+import com.io7m.stonegarden.api.SGArchitecture;
+import org.immutables.value.Value;
 
 /**
- * A program instance.
+ * Kernel compatibility descriptions.
  */
 
-public interface SGProgramType
+@ImmutablesStyleType
+@Value.Immutable
+public interface SGKernelCompatibilityType
 {
+  /**
+   * @return The hardware architecture
+   */
 
+  @Value.Parameter
+  SGArchitecture architecture();
 }

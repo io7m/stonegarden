@@ -14,13 +14,26 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.io7m.stonegarden.api.programs;
+package com.io7m.stonegarden.api.devices;
+
+import com.io7m.stonegarden.api.kernels.SGKernelExecutableDescription;
 
 /**
- * A program instance.
+ * The view of a storage device exposed to kernels.
  */
 
-public interface SGProgramType
+public interface SGStorageDeviceKernelInterfaceType
+  extends SGDeviceKernelInterfaceType, SGStorageDeviceType
 {
+  /**
+   * Add the given kernel to the storage device.
+   *
+   * @param kernel The kernel
+   *
+   * @throws SGStorageDeviceOutOfSpaceException If the device does not have enough space left to
+   *                                            contain the kernel
+   */
 
+  void addKernel(SGKernelExecutableDescription kernel)
+    throws SGStorageDeviceOutOfSpaceException;
 }

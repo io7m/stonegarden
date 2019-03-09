@@ -16,11 +16,22 @@
 
 package com.io7m.stonegarden.api.programs;
 
+import java.util.List;
+
 /**
- * A program instance.
+ * A program executable.
  */
 
-public interface SGProgramType
+public interface SGProgramExecutableType
 {
+  /**
+   * Start the program.
+   *
+   * @param arguments The program arguments
+   *
+   * @return The running program
+   */
 
+  SGProgramType execute(
+    List<String> arguments);
 }

@@ -14,13 +14,23 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.io7m.stonegarden.api.programs;
+
+package com.io7m.stonegarden.api.computer;
+
+import com.io7m.immutables.styles.ImmutablesStyleType;
+import org.immutables.value.Value;
+
+import java.util.UUID;
 
 /**
- * A program instance.
+ * A computer has started shutting down.
  */
 
-public interface SGProgramType
+@ImmutablesStyleType
+@Value.Immutable
+public interface SGComputerEventShuttingDownType extends SGComputerEventType
 {
-
+  @Override
+  @Value.Parameter
+  UUID id();
 }
