@@ -16,7 +16,6 @@
 
 package com.io7m.stonegarden.vanilla;
 
-import com.io7m.stonegarden.api.SGException;
 import com.io7m.stonegarden.api.connectors.SGConnectorDescription;
 import com.io7m.stonegarden.api.connectors.SGConnectorSocketType;
 import com.io7m.stonegarden.api.connectors.SGConnectorType;
@@ -25,6 +24,7 @@ import com.io7m.stonegarden.api.devices.SGDeviceType;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 final class SGConnector extends SGIdentifiable implements SGConnectorType
 {
@@ -61,17 +61,16 @@ final class SGConnector extends SGIdentifiable implements SGConnectorType
   }
 
   @Override
-  public void connectTo(final SGConnectorSocketType socket)
-    throws SGException
+  public CompletableFuture<Void> connectTo(final SGConnectorSocketType socket)
   {
     Objects.requireNonNull(socket, "socket");
-    this.simulation.deviceGraph().connect(this, socket);
+    return this.simulation.runLater(() -> this.simulation.deviceGraph().connect(this, socket));
   }
 
   @Override
-  public void disconnect()
+  public CompletableFuture<Void> disconnect()
   {
-    this.simulation.deviceGraph().disconnect(this);
+    return this.simulation.runLater(() -> this.simulation.deviceGraph().disconnect(this));
   }
 
   @Override
@@ -79,4 +78,5 @@ final class SGConnector extends SGIdentifiable implements SGConnectorType
   {
     return this.simulation.deviceGraph().connectedSocket(this);
   }
+
 }

@@ -16,10 +16,10 @@
 
 package com.io7m.stonegarden.api.connectors;
 
-import com.io7m.stonegarden.api.SGException;
 import com.io7m.stonegarden.api.devices.SGDeviceType;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * A hardware socket on a device.
@@ -50,18 +50,19 @@ public interface SGConnectorSocketType extends SGConnectableType
    *
    * @param connector The connector
    *
-   * @throws SGException On errors
+   * @return The operation in progress
    */
 
-  void acceptConnector(SGConnectorType connector)
-    throws SGException;
+  CompletableFuture<Void> connectTo(SGConnectorType connector);
 
   /**
    * Disconnect this socket from any connected connector. Does nothing if the socket is not
    * connected.
+   *
+   * @return The operation in progress
    */
 
-  void disconnect();
+  CompletableFuture<Void> disconnect();
 
   /**
    * @return The connector to which this socket is connected, if any

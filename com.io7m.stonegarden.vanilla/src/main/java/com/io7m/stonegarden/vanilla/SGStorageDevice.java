@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 final class SGStorageDevice extends SGDevice implements SGStorageDeviceKernelInterfaceType
 {
@@ -77,22 +78,25 @@ final class SGStorageDevice extends SGDevice implements SGStorageDeviceKernelInt
   }
 
   @Override
-  public void addKernel(
+  public CompletableFuture<Void> addKernel(
     final SGKernelExecutableDescription kernel)
-    throws SGStorageDeviceOutOfSpaceException
   {
-    final var required = kernel.description().sizeOctets();
-    if (!this.spaceAvailableFor(required)) {
-      throw new SGStorageDeviceOutOfSpaceException(this, required);
-    }
+    Objects.requireNonNull(kernel, "kernel");
 
-    LOG.debug(
-      "[{}]: add kernel {} {} ({} octets)",
-      this.id(),
-      kernel.description().name(),
-      kernel.description().version().toHumanString(),
-      required);
-    this.kernels.add(Objects.requireNonNull(kernel, "kernel"));
-    this.space_used = this.space_used.add(required);
+    return this.simulation().runLater(() -> {
+      final var required = kernel.description().sizeOctets();
+      if (!this.spaceAvailableFor(required)) {
+        throw new SGStorageDeviceOutOfSpaceException(this, required);
+      }
+
+      LOG.debug(
+        "[{}]: add kernel {} {} ({} octets)",
+        this.id(),
+        kernel.description().name(),
+        kernel.description().version().toHumanString(),
+        required);
+      this.kernels.add(Objects.requireNonNull(kernel, "kernel"));
+      this.space_used = this.space_used.add(required);
+    });
   }
 }

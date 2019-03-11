@@ -41,8 +41,8 @@ abstract class SGIdentifiable implements SGIdentifiableType
     if (o == null || !Objects.equals(this.getClass(), o.getClass())) {
       return false;
     }
-    final var that = (SGIdentifiable) o;
-    return this.id.equals(that.id);
+    final var other = (SGIdentifiable) o;
+    return this.id.equals(other.id);
   }
 
   @Override

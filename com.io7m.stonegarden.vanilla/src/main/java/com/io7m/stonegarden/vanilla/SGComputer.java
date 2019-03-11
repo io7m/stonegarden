@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -94,22 +95,24 @@ final class SGComputer extends SGDevice implements SGComputerType
   }
 
   @Override
-  public void shutdown()
+  public CompletableFuture<Void> shutdown()
   {
-    if (this.running.compareAndSet(true, false)) {
-      this.simulation.publishEvent(SGComputerEventShuttingDown.of(this.id));
+    return this.simulation.runLater(() -> {
+      if (this.running.compareAndSet(true, false)) {
+        this.simulation.publishEvent(SGComputerEventShuttingDown.of(this.id));
 
-      if (this.kernel != null) {
-        try {
-          this.kernel.onShutDown();
-        } catch (final Exception e) {
-          this.writeConsole("kernel shutdown failed: %s", e.getMessage());
-          LOG.debug("kernel shutdown failed: ", e);
+        if (this.kernel != null) {
+          try {
+            this.kernel.onShutDown();
+          } catch (final Exception e) {
+            this.writeConsole("kernel shutdown failed: %s", e.getMessage());
+            LOG.debug("kernel shutdown failed: ", e);
+          }
         }
-      }
 
-      this.simulation.publishEvent(SGComputerEventShutDown.of(this.id));
-    }
+        this.simulation.publishEvent(SGComputerEventShutDown.of(this.id));
+      }
+    });
   }
 
   @Override
@@ -125,68 +128,70 @@ final class SGComputer extends SGDevice implements SGComputerType
   }
 
   @Override
-  public void boot(final List<SGComputerBootOrderItem> order)
+  public CompletableFuture<Void> boot(final List<SGComputerBootOrderItem> next_order)
   {
-    Objects.requireNonNull(order, "order");
+    return this.simulation.runLater(() -> {
+      final var order = List.copyOf(next_order);
 
-    if (this.running.compareAndSet(false, true)) {
-      this.simulation.publishEvent(SGComputerEventBooting.of(this.id));
+      if (this.running.compareAndSet(false, true)) {
+        this.simulation.publishEvent(SGComputerEventBooting.of(this.id));
 
-      for (final var item : order) {
-        final var device = item.device();
-        if (!this.simulation.deviceGraph().areDirectlyConnected(this, device)) {
-          this.writeConsole("device %s is not connected", device.id());
-          continue;
+        for (final var item : order) {
+          final var device = item.device();
+          if (!this.simulation.deviceGraph().areDirectlyConnected(this, device)) {
+            this.writeConsole("device %s is not connected", device.id());
+            continue;
+          }
+
+          final var kernel_desc_found = findKernelWithMatchingName(item);
+          if (kernel_desc_found.isEmpty()) {
+            this.writeConsole(
+              "no kernel found on %s with name %s:%s",
+              device.id(),
+              item.name(),
+              item.version().toHumanString());
+            continue;
+          }
+
+          final var kernel_desc = kernel_desc_found.get();
+          if (!this.kernelIsCompatible(kernel_desc)) {
+            this.writeConsole("kernel is not compatible with this architecture");
+            continue;
+          }
+
+          final var context = new KernelContext(this);
+          final var executable = kernel_desc.executable();
+
+          try {
+            this.kernel = executable.execute(this.simulation, context, item.parameters());
+          } catch (final Exception e) {
+            this.simulation.publishEvent(SGComputerEventBootFailed.of(this.id, e.getMessage()));
+            this.running.set(false);
+          }
+
+          this.simulation.publishEvent(SGComputerEventBooted.of(this.id));
+          this.running.set(true);
+
+          try {
+            this.kernel.onStart();
+          } catch (final Exception e) {
+            LOG.error("[{}]: kernel start failed: ", this.id.toString(), e);
+          }
+          return;
         }
 
-        final var kernel_desc_found = findKernelWithMatchingName(item);
-        if (kernel_desc_found.isEmpty()) {
-          this.writeConsole(
-            "no kernel found on %s with name %s:%s",
-            device.id(),
-            item.name(),
-            item.version().toHumanString());
-          continue;
-        }
-
-        final var kernel_desc = kernel_desc_found.get();
-        if (!this.kernelIsCompatible(kernel_desc)) {
-          this.writeConsole("kernel is not compatible with this architecture");
-          continue;
-        }
-
-        final var context = new KernelContext(this);
-        final var executable = kernel_desc.executable();
-
-        try {
-          this.kernel = executable.execute(context, item.parameters());
-        } catch (final Exception e) {
-          this.simulation.publishEvent(SGComputerEventBootFailed.of(this.id, e.getMessage()));
-          this.running.set(false);
-        }
-
-        this.simulation.publishEvent(SGComputerEventBooted.of(this.id));
-        this.running.set(true);
-
-        try {
-          this.kernel.onStart();
-        } catch (final Exception e) {
-          LOG.error("[{}]: kernel start failed: ", this.id.toString(), e);
-        }
-        return;
+        this.simulation.publishEvent(SGComputerEventBootFailed.of(this.id, "No kernel available"));
+        this.running.set(false);
       }
-
-      this.simulation.publishEvent(SGComputerEventBootFailed.of(this.id, "No kernel available"));
-      this.running.set(false);
-    }
+    });
   }
 
   private boolean kernelIsCompatible(
     final SGKernelExecutableDescriptionType kernel_exec)
   {
-    return Objects.equals(
-      kernel_exec.description().compatibility().architecture(),
-      this.description.architecture());
+    final var kernel_arch = kernel_exec.description().compatibility().architecture();
+    final var comput_arch = this.description.architecture();
+    return Objects.equals(kernel_arch, comput_arch);
   }
 
   private void writeConsole(

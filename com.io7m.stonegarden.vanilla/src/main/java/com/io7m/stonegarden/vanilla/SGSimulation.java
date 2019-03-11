@@ -17,34 +17,44 @@
 package com.io7m.stonegarden.vanilla;
 
 import com.io7m.stonegarden.api.SGEventType;
-import com.io7m.stonegarden.api.SGIdentifiableType;
 import com.io7m.stonegarden.api.computer.SGComputerDescription;
 import com.io7m.stonegarden.api.computer.SGComputerType;
+import com.io7m.stonegarden.api.connectors.SGConnectorDescription;
+import com.io7m.stonegarden.api.connectors.SGConnectorSocketDescription;
+import com.io7m.stonegarden.api.connectors.SGConnectorSocketType;
+import com.io7m.stonegarden.api.connectors.SGConnectorType;
 import com.io7m.stonegarden.api.devices.SGDeviceEventCreated;
-import com.io7m.stonegarden.api.devices.SGDeviceType;
 import com.io7m.stonegarden.api.devices.SGStorageDeviceDescription;
 import com.io7m.stonegarden.api.devices.SGStorageDeviceType;
 import com.io7m.stonegarden.api.simulation.SGSimulationEventTick;
 import com.io7m.stonegarden.api.simulation.SGSimulationType;
 import io.reactivex.Observable;
 import io.reactivex.subjects.PublishSubject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 final class SGSimulation implements SGSimulationType, SGSimulationInternalAPIType
 {
+  private static final Logger LOG = LoggerFactory.getLogger(SGSimulation.class);
+
   private final PublishSubject<SGEventType> events;
-  private final HashMap<UUID, SGIdentifiableType> objects;
+  private final HashMap<UUID, SGIdentifiable> actors;
   private final HashSet<UUID> uuids;
   private final AtomicBoolean closed;
   private final Observable<SGEventType> events_distinct;
   private final SGDeviceGraph device_graph;
+  private final Queue<Runnable> tasks;
   private BigInteger frame;
 
   SGSimulation(
@@ -53,11 +63,20 @@ final class SGSimulation implements SGSimulationType, SGSimulationInternalAPITyp
     this.events = Objects.requireNonNull(in_events, "events");
     this.events_distinct = this.events.distinctUntilChanged();
 
-    this.objects = new HashMap<>(128);
+    this.tasks = new ConcurrentLinkedQueue<>();
+    this.actors = new HashMap<>(128);
     this.uuids = new HashSet<>(128);
     this.closed = new AtomicBoolean(false);
-    this.device_graph = new SGDeviceGraph(this.events::onNext, this.events_distinct, this.objects);
     this.frame = BigInteger.ZERO;
+
+    this.device_graph =
+      new SGDeviceGraph(this.events::onNext, this.events_distinct, cast(this.actors));
+  }
+
+  @SuppressWarnings("unchecked")
+  private static <K, V> HashMap<K, V> cast(final HashMap<K, ? extends V> m)
+  {
+    return (HashMap<K, V>) m;
   }
 
   @Override
@@ -82,7 +101,16 @@ final class SGSimulation implements SGSimulationType, SGSimulationInternalAPITyp
 
     final var current_frame = this.frame;
     this.frame = this.frame.add(BigInteger.ONE);
-    this.events.onNext(SGSimulationEventTick.of(current_frame, seconds));
+
+    this.events.onNext(SGSimulationEventTick.of(this.frame, seconds));
+
+    while (!this.tasks.isEmpty()) {
+      try {
+        this.tasks.poll().run();
+      } catch (final Exception e) {
+        LOG.error("task raised exception: ", e);
+      }
+    }
   }
 
   @Override
@@ -101,12 +129,12 @@ final class SGSimulation implements SGSimulationType, SGSimulationInternalAPITyp
     return this.createDevice(uuid -> new SGComputer(this, uuid, description));
   }
 
-  private <T extends SGDeviceType> T createDevice(
+  private <T extends SGDevice> T createDevice(
     final Function<UUID, T> constructor)
   {
     final var uuid = this.freshUUID();
     final var device = constructor.apply(uuid);
-    this.objects.put(uuid, device);
+    this.actors.put(uuid, device);
     this.device_graph.addDevice(device);
     this.events.onNext(SGDeviceEventCreated.of(uuid));
     return device;
@@ -139,6 +167,46 @@ final class SGSimulation implements SGSimulationType, SGSimulationInternalAPITyp
   public SGDeviceGraph deviceGraph()
   {
     return this.device_graph;
+  }
+
+  @Override
+  public SGConnectorSocketType createConnectorSocket(
+    final SGDevice device,
+    final SGConnectorSocketDescription description)
+  {
+    final var uuid = this.freshUUID();
+    final var connector_socket = new SGConnectorSocket(this, device, uuid, description);
+    this.actors.put(uuid, connector_socket);
+    return connector_socket;
+  }
+
+  @Override
+  public SGConnectorType createConnector(
+    final SGDevice device,
+    final SGConnectorDescription description)
+  {
+    final var uuid = this.freshUUID();
+    final var connector = new SGConnector(this, device, uuid, description);
+    this.actors.put(uuid, connector);
+    return connector;
+  }
+
+  @Override
+  public CompletableFuture<Void> runLater(
+    final SGSimulationTaskType task)
+  {
+    Objects.requireNonNull(task, "task");
+
+    final var future = new CompletableFuture<Void>();
+    this.tasks.add(() -> {
+      try {
+        task.execute();
+        future.complete(null);
+      } catch (final Exception e) {
+        future.completeExceptionally(e);
+      }
+    });
+    return future;
   }
 
   @Override

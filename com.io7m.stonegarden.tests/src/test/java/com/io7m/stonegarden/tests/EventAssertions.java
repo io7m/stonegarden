@@ -50,10 +50,25 @@ public final class EventAssertions
         .append(")")
         .toString());
 
-    final TB x = events.get(index);
-    Assertions.assertTrue(x.getClass().equals(clazz), "Class is " + clazz);
-    final T y = (T) x;
+    final var x = events.get(index);
+    isTypeAndMatches(clazz, x, property);
+  }
+
+  public static <T extends TB, TB> void isTypeAndMatches(
+    final Class<T> clazz,
+    final TB x,
+    final Consumer<T> property)
+  {
+    final var y = isType(clazz, x);
     property.accept(y);
+  }
+
+  public static <T extends TB, TB> T isType(
+    final Class<T> clazz,
+    final TB x)
+  {
+    Assertions.assertTrue(x.getClass().equals(clazz), "Class is " + clazz);
+    return (T) x;
   }
 
   /**

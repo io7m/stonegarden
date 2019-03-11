@@ -30,6 +30,7 @@ import com.io7m.stonegarden.api.connectors.SGConnectorProtocolName;
 import com.io7m.stonegarden.api.connectors.SGConnectorSocketDescription;
 import com.io7m.stonegarden.api.devices.SGDeviceEventCreated;
 import com.io7m.stonegarden.api.devices.SGStorageDeviceDescription;
+import com.io7m.stonegarden.api.simulation.SGSimulationEventTick;
 import com.io7m.stonegarden.api.simulation.SGSimulationType;
 import com.io7m.stonegarden.vanilla.SGKernelHelloWorld;
 import com.io7m.stonegarden.vanilla.SGKernelInstaller;
@@ -115,19 +116,26 @@ public abstract class SGComputerContract
           .build());
 
     computer.boot(List.of());
-    computer.shutdown();
+    this.simulation.tick(1.0 / 60.0);
 
-    Assertions.assertEquals(3, this.events.size(), "Correct event count");
+    computer.shutdown();
+    this.simulation.tick(1.0 / 60.0);
+
+    Assertions.assertEquals(5, this.events.size(), "Correct event count");
+    this.events.removeIf(e -> e instanceof SGSimulationEventTick);
+
     EventAssertions.isTypeAndMatches(
       SGDeviceEventCreated.class,
       this.events,
       0,
       e -> Assertions.assertEquals(computer.id(), e.id()));
+
     EventAssertions.isTypeAndMatches(
       SGComputerEventBooting.class,
       this.events,
       1,
       e -> Assertions.assertEquals(computer.id(), e.id()));
+
     EventAssertions.isTypeAndMatches(
       SGComputerEventBootFailed.class,
       this.events,
@@ -140,7 +148,6 @@ public abstract class SGComputerContract
 
   @Test
   public final void testCreateComputerBootInstaller()
-    throws SGException
   {
     final var computer =
       this.simulation.createComputer(
@@ -169,6 +176,8 @@ public abstract class SGComputerContract
     Assertions.assertEquals(0L, device.spaceUsedOctets().longValue());
 
     connector.connectTo(socket);
+    this.simulation.tick(1.0 / 60.0);
+
     computer.boot(
       List.of(SGComputerBootOrderItem.of(
         "INSTALLER",
@@ -177,6 +186,7 @@ public abstract class SGComputerContract
         device
       )));
 
+    this.simulation.tick(1.0 / 60.0);
     Assertions.assertFalse(computer.isRunning());
     Assertions.assertEquals(5855104L, device.spaceUsedOctets().longValue());
 
@@ -188,14 +198,16 @@ public abstract class SGComputerContract
         device
       )));
 
+    this.simulation.tick(1.0 / 60.0);
     Assertions.assertTrue(computer.isRunning());
+
     computer.shutdown();
+    this.simulation.tick(1.0 / 60.0);
     Assertions.assertFalse(computer.isRunning());
   }
 
   @Test
   public final void testCreateComputerBootInstallerTooLarge()
-    throws SGException
   {
     final var computer =
       this.simulation.createComputer(

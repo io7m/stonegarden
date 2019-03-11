@@ -16,6 +16,8 @@
 
 package com.io7m.stonegarden.api.kernels;
 
+import com.io7m.stonegarden.api.simulation.SGSimulationType;
+
 import java.util.Properties;
 
 /**
@@ -27,6 +29,7 @@ public interface SGKernelExecutableType
   /**
    * Start the kernel.
    *
+   * @param simulation The simulation inside which the kernel is running
    * @param context    The kernel execution context
    * @param parameters The kernel arguments
    *
@@ -34,6 +37,7 @@ public interface SGKernelExecutableType
    */
 
   SGKernelType execute(
+    SGSimulationType simulation,
     SGKernelContextType context,
     Properties parameters);
 }

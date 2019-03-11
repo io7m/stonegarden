@@ -23,6 +23,7 @@ import com.io7m.stonegarden.api.kernels.SGKernelContextType;
 import com.io7m.stonegarden.api.kernels.SGKernelDescription;
 import com.io7m.stonegarden.api.kernels.SGKernelExecutableDescription;
 import com.io7m.stonegarden.api.kernels.SGKernelType;
+import com.io7m.stonegarden.api.simulation.SGSimulationType;
 
 import java.math.BigInteger;
 import java.util.Objects;
@@ -70,11 +71,15 @@ public final class SGKernelHelloWorld
   {
     private final SGKernelContextType context;
     private final Properties parameters;
+    private final SGSimulationType simulation;
 
     Kernel(
+      final SGSimulationType in_simulation,
       final SGKernelContextType in_context,
       final Properties in_parameters)
     {
+      this.simulation =
+        Objects.requireNonNull(in_simulation, "simulation");
       this.context =
         Objects.requireNonNull(in_context, "context");
       this.parameters =

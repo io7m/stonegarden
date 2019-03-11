@@ -17,9 +17,14 @@
 package com.io7m.stonegarden.vanilla;
 
 import com.io7m.stonegarden.api.SGEventType;
+import com.io7m.stonegarden.api.connectors.SGConnectorDescription;
+import com.io7m.stonegarden.api.connectors.SGConnectorSocketDescription;
+import com.io7m.stonegarden.api.connectors.SGConnectorSocketType;
+import com.io7m.stonegarden.api.connectors.SGConnectorType;
 import com.io7m.stonegarden.api.simulation.SGSimulationType;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 interface SGSimulationInternalAPIType extends SGSimulationType
 {
@@ -28,4 +33,15 @@ interface SGSimulationInternalAPIType extends SGSimulationType
   UUID freshUUID();
 
   SGDeviceGraph deviceGraph();
+
+  SGConnectorSocketType createConnectorSocket(
+    SGDevice device,
+    SGConnectorSocketDescription description);
+
+  SGConnectorType createConnector(
+    SGDevice device,
+    SGConnectorDescription description);
+
+  CompletableFuture<Void> runLater(
+    SGSimulationTaskType task);
 }

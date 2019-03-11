@@ -238,7 +238,7 @@ public final class SGBruteForceEqualityTest
         };
       }
       if (return_type.equals(SGKernelExecutableType.class)) {
-        return (SGKernelExecutableType) (context, parameters) -> null;
+        return (SGKernelExecutableType) (simulation, context, parameters) -> null;
       }
       if (return_type.equals(SGKernelDescription.class)) {
         return SGKernelDescription.of(

@@ -19,12 +19,12 @@ package com.io7m.stonegarden.vanilla;
 import com.io7m.stonegarden.api.SGArchitecture;
 import com.io7m.stonegarden.api.SGVersion;
 import com.io7m.stonegarden.api.devices.SGStorageDeviceKernelInterfaceType;
-import com.io7m.stonegarden.api.devices.SGStorageDeviceOutOfSpaceException;
 import com.io7m.stonegarden.api.kernels.SGKernelCompatibility;
 import com.io7m.stonegarden.api.kernels.SGKernelContextType;
 import com.io7m.stonegarden.api.kernels.SGKernelDescription;
 import com.io7m.stonegarden.api.kernels.SGKernelExecutableDescription;
 import com.io7m.stonegarden.api.kernels.SGKernelType;
+import com.io7m.stonegarden.api.simulation.SGSimulationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,21 +68,25 @@ public final class SGKernelInstaller
 
     return SGKernelExecutableDescription.builder()
       .setDescription(description)
-      .setExecutable((context, parameters) -> new Kernel(install, context, parameters))
+      .setExecutable((simulation, context, parameters) -> new Kernel(simulation, install, context, parameters))
       .build();
   }
 
   private static final class Kernel implements SGKernelType
   {
+    private final SGSimulationType simulation;
     private final SGKernelExecutableDescription install;
     private final SGKernelContextType context;
     private final Properties parameters;
 
     Kernel(
+      final SGSimulationType in_simulation,
       final SGKernelExecutableDescription in_install,
       final SGKernelContextType in_context,
       final Properties in_parameters)
     {
+      this.simulation =
+        Objects.requireNonNull(in_simulation, "simulation");
       this.install =
         Objects.requireNonNull(in_install, "install");
       this.context =
@@ -93,7 +97,6 @@ public final class SGKernelInstaller
 
     @Override
     public void onStart()
-      throws SGStorageDeviceOutOfSpaceException
     {
       try {
         this.context.writeConsole(
@@ -120,7 +123,7 @@ public final class SGKernelInstaller
 
         final var device = device_opt.get();
         if (!(device instanceof SGStorageDeviceKernelInterfaceType)) {
-          this.context.writeConsole("no target device is not a storage device");
+          this.context.writeConsole("target device is not a storage device");
           return;
         }
 

@@ -19,6 +19,7 @@ package com.io7m.stonegarden.api.computer;
 import com.io7m.stonegarden.api.devices.SGDeviceType;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * A computer instance.
@@ -39,15 +40,19 @@ public interface SGComputerType extends SGDeviceType
    * Boot the computer. Does nothing if the computer is already running.
    *
    * @param order The boot order
+   *
+   * @return The operation in progress
    */
 
-  void boot(List<SGComputerBootOrderItem> order);
+  CompletableFuture<Void> boot(List<SGComputerBootOrderItem> order);
 
   /**
    * Shut down the computer. Does nothing if the computer is not running.
+   *
+   * @return The operation in progress
    */
 
-  void shutdown();
+  CompletableFuture<Void> shutdown();
 
   /**
    * @return {@code true} if {@link #boot(List)} has been called, booting succeeded, and {@link

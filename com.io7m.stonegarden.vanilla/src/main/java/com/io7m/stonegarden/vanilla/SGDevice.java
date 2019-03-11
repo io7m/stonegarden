@@ -36,8 +36,8 @@ abstract class SGDevice extends SGIdentifiable implements SGDeviceKernelInterfac
 {
   private final SGSimulationInternalAPIType simulation;
   private final SGDeviceDescriptionType description;
-  private final ArrayList<SGConnectorSocket> sockets;
-  private final ArrayList<SGConnector> connectors;
+  private final ArrayList<SGConnectorSocketType> sockets;
+  private final ArrayList<SGConnectorType> connectors;
   private final List<SGConnectorSocketType> sockets_read;
   private final List<SGConnectorType> connectors_read;
   private final TreeMap<UUID, SGConnectorType> connectors_by_id;
@@ -61,19 +61,17 @@ abstract class SGDevice extends SGIdentifiable implements SGDeviceKernelInterfac
     this.sockets_by_id = new TreeMap<>();
     this.sockets = new ArrayList<>(this.description.sockets().size());
     for (final var socket_description : this.description.sockets()) {
-      final var uuid = in_simulation.freshUUID();
-      final var socket = new SGConnectorSocket(in_simulation, this, uuid, socket_description);
+      final var socket = this.simulation.createConnectorSocket(this, socket_description);
       this.sockets.add(socket);
-      this.sockets_by_id.put(uuid, socket);
+      this.sockets_by_id.put(socket.id(), socket);
     }
 
     this.connectors_by_id = new TreeMap<>();
     this.connectors = new ArrayList<>(this.description.connectors().size());
     for (final var connector_description : this.description.connectors()) {
-      final var uuid = in_simulation.freshUUID();
-      final var connector = new SGConnector(in_simulation, this, uuid, connector_description);
+      final var connector = this.simulation.createConnector(this, connector_description);
       this.connectors.add(connector);
-      this.connectors_by_id.put(uuid, connector);
+      this.connectors_by_id.put(connector.id(), connector);
     }
 
     this.sockets_read = Collections.unmodifiableList(this.sockets);
@@ -83,12 +81,14 @@ abstract class SGDevice extends SGIdentifiable implements SGDeviceKernelInterfac
   @Override
   public final void close()
   {
-    if (this.closed.compareAndSet(false, true)) {
-      final var id = this.id();
-      this.simulation.publishEvent(SGDeviceEventDestroying.of(id));
-      this.onClose();
-      this.simulation.publishEvent(SGDeviceEventDestroyed.of(id));
-    }
+    this.simulation.runLater(() -> {
+      if (this.closed.compareAndSet(false, true)) {
+        final var id = this.id();
+        this.simulation.publishEvent(SGDeviceEventDestroying.of(id));
+        this.onClose();
+        this.simulation.publishEvent(SGDeviceEventDestroyed.of(id));
+      }
+    });
   }
 
   protected abstract void onClose();

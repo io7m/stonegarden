@@ -14,27 +14,10 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.io7m.stonegarden.api.devices;
+package com.io7m.stonegarden.vanilla;
 
-import com.io7m.stonegarden.api.kernels.SGKernelExecutableDescription;
-
-import java.util.concurrent.CompletableFuture;
-
-/**
- * The view of a storage device exposed to kernels.
- */
-
-public interface SGStorageDeviceKernelInterfaceType
-  extends SGDeviceKernelInterfaceType, SGStorageDeviceType
+interface SGSimulationTaskType
 {
-  /**
-   * Add the given kernel to the storage device.
-   *
-   * @param kernel The kernel
-   *
-   * @return The operation in progress
-   */
-
-  CompletableFuture<Void> addKernel(
-    SGKernelExecutableDescription kernel);
+  void execute()
+    throws Exception;
 }
